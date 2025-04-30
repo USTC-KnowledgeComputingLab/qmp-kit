@@ -13,6 +13,7 @@ from . import fcidump as _  # type: ignore[no-redef]
 from . import hubbard as _  # type: ignore[no-redef]
 from . import free_fermion as _  # type: ignore[no-redef]
 from . import ising as _  # type: ignore[no-redef]
+from . import guide as _  # type: ignore[no-redef]
 from . import vmc as _  # type: ignore[no-redef]
 from . import haar as _  # type: ignore[no-redef]
 from . import rldiag as _  # type: ignore[no-redef]
@@ -46,7 +47,10 @@ def main(config: omegaconf.DictConfig) -> None:
     network_config_t = model_t.network_dict[config.network.name]
     network_param = network_config_t(**config.network.params)
 
-    run.main(model_param=model_param, network_param=network_param)  # type: ignore[call-arg]
+    if config.action.name == "guide":
+        run.main(model_param=model_param, network_param=network_param, config=config)  # type: ignore[call-arg]
+    else:
+        run.main(model_param=model_param, network_param=network_param)  # type: ignore[call-arg]
 
 
 if __name__ == "__main__":

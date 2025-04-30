@@ -1,0 +1,215 @@
+"""
+This file implements a variational Monte Carlo method for solving quantum many-body problems with guide.
+"""
+
+import logging
+import typing
+import dataclasses
+import omegaconf
+import torch
+import torch.utils.tensorboard
+import tyro
+from .common import CommonConfig
+from .subcommand_dict import subcommand_dict
+from .optimizer import initialize_optimizer
+from .model_dict import model_dict
+
+
+@dataclasses.dataclass
+class GuideConfig:
+    """
+    The guided VMC optimization for solving quantum many-body problems.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    common: typing.Annotated[CommonConfig, tyro.conf.OmitArgPrefixes]
+
+    # The sampling count
+    sampling_count: typing.Annotated[int, tyro.conf.arg(aliases=["-n"])] = 4000
+    # The number of relative configurations to be used in energy calculation
+    relative_count: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 40000
+    # Whether to use the global optimizer
+    global_opt: typing.Annotated[bool, tyro.conf.arg(aliases=["-g"])] = False
+    # Whether to use LBFGS instead of Adam
+    use_lbfgs: typing.Annotated[bool, tyro.conf.arg(aliases=["-2"])] = False
+    # The learning rate for the local optimizer
+    learning_rate: typing.Annotated[float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")] = -1
+    # The number of steps for the local optimizer
+    local_step: typing.Annotated[int, tyro.conf.arg(aliases=["-s"])] = 1000
+    # The number of steps for the distribution optimizer
+    dist_step: typing.Annotated[int, tyro.conf.arg(aliases=["-d"])] = 100
+
+    def __post_init__(self) -> None:
+        if self.learning_rate == -1:
+            self.learning_rate = 1 if self.use_lbfgs else 1e-3
+
+    def main(self, *, model_param: typing.Any = None, network_param: typing.Any = None, config: omegaconf.DictConfig | None = None) -> None:
+        """
+        The main function for the guided VMC optimization.
+        """
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-statements
+        assert config is not None
+
+        model, network, data = self.common.main(model_param=model_param, network_param=network_param)
+
+        model_t = model_dict[config.model.name]
+        sampling_config_t = model_t.network_dict[config.sampling.name]
+        sampling_param = sampling_config_t(**config.sampling.params)
+        sampling = sampling_param.create(model)
+        if "sampling" in data:
+            sampling.load_state_dict(data["sampling"])
+        sampling = sampling.to(device=self.common.device, dtype=self.common.dtype)
+        sampling = torch.jit.script(sampling)
+
+        logging.info(
+            "Arguments Summary: "
+            "Sampling Count: %d, "
+            "Relative Count: %d, "
+            "Global Optimizer: %s, "
+            "Use LBFGS: %s, "
+            "Learning Rate: %.10f, "
+            "Local Steps: %d, "
+            "Dist Steps: %d",
+            self.sampling_count,
+            self.relative_count,
+            "Yes" if self.global_opt else "No",
+            "Yes" if self.use_lbfgs else "No",
+            self.learning_rate,
+            self.local_step,
+            self.dist_step,
+        )
+
+        optimizer_network = initialize_optimizer(
+            network.parameters(),
+            use_lbfgs=self.use_lbfgs,
+            learning_rate=self.learning_rate,
+            state_dict=data.get("optimizer"),
+        )
+        optimizer_sampling = initialize_optimizer(
+            sampling.parameters(),
+            use_lbfgs=self.use_lbfgs,
+            learning_rate=self.learning_rate,
+            state_dict=data.get("optimizer_sampling"),
+        )
+
+        if "guide" not in data:
+            data["guide"] = {"global": 0, "local": 0, "dist": 0}
+
+        writer = torch.utils.tensorboard.SummaryWriter(log_dir=self.common.folder())  # type: ignore[no-untyped-call]
+
+        while True:
+            logging.info("Starting a new optimization cycle")
+
+            logging.info("Sampling configurations")
+            configs_src_network, psi_src_network, _, _ = network.generate_unique(self.sampling_count)
+            configs_src_sampling, psi_src_sampling, _, _ = sampling.generate_unique(self.sampling_count)
+
+            logging.info("Calculating relative configurations")
+            if self.relative_count <= len(configs_src_network):
+                configs_dst_network = configs_src_network
+            else:
+                configs_dst_network = torch.cat([configs_src_network, model.find_relative(configs_src_network, psi_src_network, self.relative_count - len(configs_src_network))])
+            if self.relative_count <= len(configs_src_sampling):
+                configs_dst_sampling = configs_src_sampling
+            else:
+                configs_dst_sampling = torch.cat([configs_src_sampling, model.find_relative(configs_src_sampling, psi_src_sampling, self.relative_count - len(configs_src_sampling))])
+
+            optimizer_network = initialize_optimizer(
+                network.parameters(),
+                use_lbfgs=self.use_lbfgs,
+                learning_rate=self.learning_rate,
+                new_opt=not self.global_opt,
+                optimizer=optimizer_network,
+            )
+            optimizer_sampling = initialize_optimizer(
+                sampling.parameters(),
+                use_lbfgs=self.use_lbfgs,
+                learning_rate=self.learning_rate,
+                new_opt=not self.global_opt,
+                optimizer=optimizer_sampling,
+            )
+
+            def energy_sampling() -> torch.Tensor:
+                configs_src = configs_src_sampling
+                configs_dst = configs_dst_sampling
+                psi_src = network(configs_src)
+                with torch.no_grad():
+                    psi_dst = network(configs_dst)
+                    hamiltonian_psi_dst = model.apply_within(configs_dst, psi_dst, configs_src)
+                num = psi_src.conj() @ hamiltonian_psi_dst
+                den = psi_src.conj() @ psi_src.detach()
+                energy = num / den
+                energy.real.backward()  # type: ignore[no-untyped-call]
+                return energy.real
+
+            def energy_network() -> torch.Tensor:
+                with torch.no_grad():
+                    configs_src = configs_src_network
+                    configs_dst = configs_dst_network
+                    psi_src = network(configs_src)
+                    psi_dst = network(configs_dst)
+                    hamiltonian_psi_dst = model.apply_within(configs_dst, psi_dst, configs_src)
+                    num = psi_src.conj() @ hamiltonian_psi_dst
+                    den = psi_src.conj() @ psi_src.detach()
+                    energy = num / den
+                    return energy.real
+
+            def distribution() -> torch.Tensor:
+                configs_src = configs_src_sampling
+                configs_dst = configs_dst_sampling
+                with torch.no_grad():
+                    psi_src = network(configs_src)
+                    psi_dst = network(configs_dst)
+                    hamiltonian_psi_dst = model.apply_within(configs_dst, psi_dst, configs_src)
+                    num = psi_src.conj() @ hamiltonian_psi_dst
+                    den = psi_src.conj() @ psi_src
+                    energy = num / den
+                    local_energy = hamiltonian_psi_dst / psi_src
+                    energy_diff = local_energy - energy
+                    weight = (energy_diff.real**2 + energy_diff.imag**2) * (psi_src.real**2 + psi_src.imag**2)
+                    weight = weight / weight.sum()
+                pred_amplitude = sampling(configs_src)
+                pred_weight = pred_amplitude.real**2 + pred_amplitude.imag**2
+                pred_weight = pred_weight / pred_weight.sum()
+                loss = pred_weight - weight
+                total_loss = (loss**2).sum()
+                total_loss.backward()  # type: ignore[no-untyped-call]
+                return total_loss
+
+            logging.info("Starting local optimization process")
+
+            for i in range(self.local_step):
+                optimizer_network.zero_grad()
+                sampling_energy: torch.Tensor = optimizer_network.step(energy_sampling)  # type: ignore[assignment,arg-type]
+                network_energy: torch.Tensor = energy_network()
+                logging.info("Local optimization in progress, step: %d, energy from sampling: %.10f, energy from network: %.10f, ref energy: %.10f", i, sampling_energy.item(), network_energy.item(),
+                             model.ref_energy)
+                writer.add_scalar("guide/energy/sampling", sampling_energy, data["guide"]["local"])  # type: ignore[no-untyped-call]
+                writer.add_scalar("guide/error/sampling", sampling_energy - model.ref_energy, data["guide"]["local"])  # type: ignore[no-untyped-call]
+                writer.add_scalar("guide/energy/network", network_energy, data["guide"]["local"])  # type: ignore[no-untyped-call]
+                writer.add_scalar("guide/error/network", network_energy - model.ref_energy, data["guide"]["local"])  # type: ignore[no-untyped-call]
+                for _ in range(self.dist_step):
+                    optimizer_sampling.zero_grad()
+                    dist_loss: torch.Tensor = optimizer_sampling.step(distribution)  # type: ignore[assignment,arg-type]
+                    writer.add_scalar("guide/dist/loss", dist_loss, data["guide"]["dist"])  # type: ignore[no-untyped-call]
+                    data["guide"]["dist"] += 1
+                data["guide"]["local"] += 1
+
+            logging.info("Local optimization process completed")
+
+            writer.flush()  # type: ignore[no-untyped-call]
+
+            logging.info("Saving model checkpoint")
+            data["guide"]["global"] += 1
+            data["network"] = network.state_dict()
+            data["optimizer"] = optimizer_network.state_dict()
+            data["optimizer_sampling"] = optimizer_sampling.state_dict()
+            self.common.save(data, data["guide"]["global"])
+            logging.info("Checkpoint successfully saved")
+
+            logging.info("Current optimization cycle completed")
+
+
+subcommand_dict["guide"] = GuideConfig
