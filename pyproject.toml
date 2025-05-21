@@ -59,6 +59,9 @@ qmb = "qmb.__main__:main"
 [tool.setuptools.packages.find]
 include = ["qmb"]
 
+[tool.setuptools.package-data]
+qmb = ["*.cpp", "*.cu"]
+
 [tool.setuptools_scm]
 version_file = "qmb/_version.py"
 version_scheme = "no-guess-dev"
