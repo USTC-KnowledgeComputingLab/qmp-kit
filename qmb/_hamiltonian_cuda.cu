@@ -9,9 +9,12 @@ namespace qmb_hamiltonian_cuda {
 
 constexpr torch::DeviceType device = torch::kCUDA;
 
+template<typename T, std::int64_t N>
+using array = T[N];
+
 template<typename T, std::int64_t size>
 struct array_less {
-    __device__ bool operator()(const std::array<T, size>& lhs, const std::array<T, size>& rhs) const {
+    __device__ bool operator()(const array<T, size>& lhs, const array<T, size>& rhs) const {
         for (std::int64_t i = 0; i < size; ++i) {
             if (lhs[i] < rhs[i]) {
                 return true;
@@ -26,14 +29,14 @@ struct array_less {
 
 template<typename T, std::int64_t size>
 struct array_square_greater {
-    __device__ T square(const std::array<T, size>& value) const {
+    __device__ T square(const array<T, size>& value) const {
         T result = 0;
         for (std::int64_t i = 0; i < size; ++i) {
             result += value[i] * value[i];
         }
         return result;
     }
-    __device__ bool operator()(const std::array<T, size>& lhs, const std::array<T, size>& rhs) const {
+    __device__ bool operator()(const array<T, size>& lhs, const array<T, size>& rhs) const {
         return square(lhs) > square(rhs);
     }
 };
@@ -52,11 +55,11 @@ __device__ void set_bit(std::uint8_t* data, std::uint8_t index, bool value) {
 
 template<std::int64_t max_op_number, std::int64_t n_qubytes, std::int64_t particle_cut>
 __device__ std::pair<bool, bool> hamiltonian_apply_kernel(
-    std::array<std::uint8_t, n_qubytes>& current_configs,
+    array<std::uint8_t, n_qubytes>& current_configs,
     std::int64_t term_index,
     std::int64_t batch_index,
-    const std::array<std::int16_t, max_op_number>* site, // term_number
-    const std::array<std::uint8_t, max_op_number>* kind // term_number
+    const array<std::int16_t, max_op_number>* site, // term_number
+    const array<std::uint8_t, max_op_number>* kind // term_number
 ) {
     static_assert(particle_cut == 1 || particle_cut == 2, "particle_cut != 1 or 2 not implemented");
     bool success = true;
@@ -89,15 +92,18 @@ __device__ void apply_within_kernel(
     std::int64_t term_number,
     std::int64_t batch_size,
     std::int64_t result_batch_size,
-    const std::array<std::int16_t, max_op_number>* site, // term_number
-    const std::array<std::uint8_t, max_op_number>* kind, // term_number
-    const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<double, 2>* psi, // batch_size
-    const std::array<std::uint8_t, n_qubytes>* result_configs, // result_batch_size
-    std::array<double, 2>* result_psi
+    const array<std::int16_t, max_op_number>* site, // term_number
+    const array<std::uint8_t, max_op_number>* kind, // term_number
+    const array<double, 2>* coef, // term_number
+    const array<std::uint8_t, n_qubytes>* configs, // batch_size
+    const array<double, 2>* psi, // batch_size
+    const array<std::uint8_t, n_qubytes>* result_configs, // result_batch_size
+    array<double, 2>* result_psi
 ) {
-    std::array<std::uint8_t, n_qubytes> current_configs = configs[batch_index];
+    array<std::uint8_t, n_qubytes> current_configs;
+    for (std::int64_t i = 0; i < n_qubytes; ++i) {
+        current_configs[i] = configs[batch_index][i];
+    }
     auto [success, parity] = hamiltonian_apply_kernel<max_op_number, n_qubytes, particle_cut>(
         /*current_configs=*/current_configs,
         /*term_index=*/term_index,
@@ -138,13 +144,13 @@ __global__ void apply_within_kernel_interface(
     std::int64_t term_number,
     std::int64_t batch_size,
     std::int64_t result_batch_size,
-    const std::array<std::int16_t, max_op_number>* site, // term_number
-    const std::array<std::uint8_t, max_op_number>* kind, // term_number
-    const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<double, 2>* psi, // batch_size
-    const std::array<std::uint8_t, n_qubytes>* result_configs, // result_batch_size
-    std::array<double, 2>* result_psi
+    const array<std::int16_t, max_op_number>* site, // term_number
+    const array<std::uint8_t, max_op_number>* kind, // term_number
+    const array<double, 2>* coef, // term_number
+    const array<std::uint8_t, n_qubytes>* configs, // batch_size
+    const array<double, 2>* psi, // batch_size
+    const array<std::uint8_t, n_qubytes>* result_configs, // result_batch_size
+    array<double, 2>* result_psi
 ) {
     std::int64_t term_index = blockIdx.x * blockDim.x + threadIdx.x;
     std::int64_t batch_index = blockIdx.y * blockDim.y + threadIdx.y;
@@ -242,8 +248,8 @@ auto apply_within_interface(
 
     thrust::sort_by_key(
         policy,
-        reinterpret_cast<std::array<std::uint8_t, n_qubytes>*>(sorted_result_configs.data_ptr()),
-        reinterpret_cast<std::array<std::uint8_t, n_qubytes>*>(sorted_result_configs.data_ptr()) + result_batch_size,
+        reinterpret_cast<array<std::uint8_t, n_qubytes>*>(sorted_result_configs.data_ptr()),
+        reinterpret_cast<array<std::uint8_t, n_qubytes>*>(sorted_result_configs.data_ptr()) + result_batch_size,
         reinterpret_cast<std::int64_t*>(result_sort_index.data_ptr()),
         array_less<std::uint8_t, n_qubytes>()
     );
@@ -256,13 +262,13 @@ auto apply_within_interface(
         /*term_number=*/term_number,
         /*batch_size=*/batch_size,
         /*result_batch_size=*/result_batch_size,
-        /*site=*/reinterpret_cast<const std::array<std::int16_t, max_op_number>*>(site.data_ptr()),
-        /*kind=*/reinterpret_cast<const std::array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
-        /*coef=*/reinterpret_cast<const std::array<double, 2>*>(coef.data_ptr()),
-        /*configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
-        /*psi=*/reinterpret_cast<const std::array<double, 2>*>(psi.data_ptr()),
-        /*result_configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(sorted_result_configs.data_ptr()),
-        /*result_psi=*/reinterpret_cast<std::array<double, 2>*>(sorted_result_psi.data_ptr())
+        /*site=*/reinterpret_cast<const array<std::int16_t, max_op_number>*>(site.data_ptr()),
+        /*kind=*/reinterpret_cast<const array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
+        /*coef=*/reinterpret_cast<const array<double, 2>*>(coef.data_ptr()),
+        /*configs=*/reinterpret_cast<const array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
+        /*psi=*/reinterpret_cast<const array<double, 2>*>(psi.data_ptr()),
+        /*result_configs=*/reinterpret_cast<const array<std::uint8_t, n_qubytes>*>(sorted_result_configs.data_ptr()),
+        /*result_psi=*/reinterpret_cast<array<double, 2>*>(sorted_result_psi.data_ptr())
     );
     AT_CUDA_CHECK(cudaStreamSynchronize(stream));
 
@@ -426,7 +432,7 @@ __device__ void add_into_heap(T* heap, int* mutex, std::int64_t heap_size, const
 
 template<typename T, std::int64_t size>
 struct array_first_double_less {
-    __device__ double first_double(const std::array<T, size + sizeof(double) / sizeof(T)>& value) const {
+    __device__ double first_double(const array<T, size + sizeof(double) / sizeof(T)>& value) const {
         double result;
         for (std::int64_t i = 0; i < sizeof(double); ++i) {
             reinterpret_cast<std::uint8_t*>(&result)[i] = reinterpret_cast<const std::uint8_t*>(&value[0])[i];
@@ -434,8 +440,7 @@ struct array_first_double_less {
         return result;
     }
 
-    __device__ bool
-    operator()(const std::array<T, size + sizeof(double) / sizeof(T)>& lhs, const std::array<T, size + sizeof(double) / sizeof(T)>& rhs) const {
+    __device__ bool operator()(const array<T, size + sizeof(double) / sizeof(T)>& lhs, const array<T, size + sizeof(double) / sizeof(T)>& rhs) const {
         return first_double(lhs) < first_double(rhs);
     }
 };
@@ -447,17 +452,20 @@ __device__ void find_relative_kernel(
     std::int64_t term_number,
     std::int64_t batch_size,
     std::int64_t exclude_size,
-    const std::array<std::int16_t, max_op_number>* site, // term_number
-    const std::array<std::uint8_t, max_op_number>* kind, // term_number
-    const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<double, 2>* psi, // batch_size
-    const std::array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
-    std::array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>* heap,
+    const array<std::int16_t, max_op_number>* site, // term_number
+    const array<std::uint8_t, max_op_number>* kind, // term_number
+    const array<double, 2>* coef, // term_number
+    const array<std::uint8_t, n_qubytes>* configs, // batch_size
+    const array<double, 2>* psi, // batch_size
+    const array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
+    array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>* heap,
     int* mutex,
     std::int64_t heap_size
 ) {
-    std::array<std::uint8_t, n_qubytes> current_configs = configs[batch_index];
+    array<std::uint8_t, n_qubytes> current_configs;
+    for (std::int64_t i = 0; i < n_qubytes; ++i) {
+        current_configs[i] = configs[batch_index][i];
+    }
     auto [success, parity] = hamiltonian_apply_kernel<max_op_number, n_qubytes, particle_cut>(
         /*current_configs=*/current_configs,
         /*term_index=*/term_index,
@@ -493,14 +501,14 @@ __device__ void find_relative_kernel(
     double imag = sign * (coef[term_index][0] * psi[batch_index][1] + coef[term_index][1] * psi[batch_index][0]);
     // Currently, the weight is calculated as the probability of the state, but it can be changed to other values in the future.
     double weight = real * real + imag * imag;
-    std::array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)> value;
+    array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)> value;
     for (std::int64_t i = 0; i < sizeof(double) / sizeof(uint8_t); ++i) {
         value[i] = reinterpret_cast<const std::uint8_t*>(&weight)[i];
     }
     for (std::int64_t i = 0; i < n_qubytes; ++i) {
         value[i + sizeof(double) / sizeof(uint8_t)] = current_configs[i];
     }
-    add_into_heap<std::array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>, array_first_double_less<std::uint8_t, n_qubytes>>(
+    add_into_heap<array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>, array_first_double_less<std::uint8_t, n_qubytes>>(
         heap,
         mutex,
         heap_size,
@@ -513,13 +521,13 @@ __global__ void find_relative_kernel_interface(
     std::int64_t term_number,
     std::int64_t batch_size,
     std::int64_t exclude_size,
-    const std::array<std::int16_t, max_op_number>* site, // term_number
-    const std::array<std::uint8_t, max_op_number>* kind, // term_number
-    const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<double, 2>* psi, // batch_size
-    const std::array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
-    std::array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>* heap,
+    const array<std::int16_t, max_op_number>* site, // term_number
+    const array<std::uint8_t, max_op_number>* kind, // term_number
+    const array<double, 2>* coef, // term_number
+    const array<std::uint8_t, n_qubytes>* configs, // batch_size
+    const array<double, 2>* psi, // batch_size
+    const array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
+    array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>* heap,
     int* mutex,
     std::int64_t heap_size
 ) {
@@ -620,8 +628,8 @@ auto find_relative_interface(
 
     thrust::sort(
         policy,
-        reinterpret_cast<std::array<std::uint8_t, n_qubytes>*>(sorted_exclude_configs.data_ptr()),
-        reinterpret_cast<std::array<std::uint8_t, n_qubytes>*>(sorted_exclude_configs.data_ptr()) + exclude_size,
+        reinterpret_cast<array<std::uint8_t, n_qubytes>*>(sorted_exclude_configs.data_ptr()),
+        reinterpret_cast<array<std::uint8_t, n_qubytes>*>(sorted_exclude_configs.data_ptr()) + exclude_size,
         array_less<std::uint8_t, n_qubytes>()
     );
 
@@ -629,8 +637,8 @@ auto find_relative_interface(
         {count_selected, n_qubytes + sizeof(double) / sizeof(std::uint8_t)},
         torch::TensorOptions().dtype(torch::kUInt8).device(device, device_id)
     );
-    std::array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>* heap =
-        reinterpret_cast<std::array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>*>(result_pool.data_ptr());
+    array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>* heap =
+        reinterpret_cast<array<std::uint8_t, n_qubytes + sizeof(double) / sizeof(std::uint8_t)>*>(result_pool.data_ptr());
     int* mutex;
     AT_CUDA_CHECK(cudaMalloc(&mutex, sizeof(int) * count_selected));
     AT_CUDA_CHECK(cudaMemset(mutex, 0, sizeof(int) * count_selected));
@@ -643,12 +651,12 @@ auto find_relative_interface(
         /*term_number=*/term_number,
         /*batch_size=*/batch_size,
         /*exclude_size=*/exclude_size,
-        /*site=*/reinterpret_cast<const std::array<std::int16_t, max_op_number>*>(site.data_ptr()),
-        /*kind=*/reinterpret_cast<const std::array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
-        /*coef=*/reinterpret_cast<const std::array<double, 2>*>(coef.data_ptr()),
-        /*configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
-        /*psi=*/reinterpret_cast<const std::array<double, 2>*>(psi.data_ptr()),
-        /*exclude_configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(sorted_exclude_configs.data_ptr()),
+        /*site=*/reinterpret_cast<const array<std::int16_t, max_op_number>*>(site.data_ptr()),
+        /*kind=*/reinterpret_cast<const array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
+        /*coef=*/reinterpret_cast<const array<double, 2>*>(coef.data_ptr()),
+        /*configs=*/reinterpret_cast<const array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
+        /*psi=*/reinterpret_cast<const array<double, 2>*>(psi.data_ptr()),
+        /*exclude_configs=*/reinterpret_cast<const array<std::uint8_t, n_qubytes>*>(sorted_exclude_configs.data_ptr()),
         /*heap=*/heap,
         /*mutex=*/mutex,
         /*heap_size=*/count_selected
@@ -679,16 +687,19 @@ __device__ void single_relative_kernel(
     std::int64_t batch_size,
     std::int64_t exclude_size,
     std::uint64_t seed,
-    const std::array<std::int16_t, max_op_number>* site, // term_number
-    const std::array<std::uint8_t, max_op_number>* kind, // term_number
-    const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
-    std::array<std::uint8_t, n_qubytes>* result_configs, // batch_size
+    const array<std::int16_t, max_op_number>* site, // term_number
+    const array<std::uint8_t, max_op_number>* kind, // term_number
+    const array<double, 2>* coef, // term_number
+    const array<std::uint8_t, n_qubytes>* configs, // batch_size
+    const array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
+    array<std::uint8_t, n_qubytes>* result_configs, // batch_size
     double* score, // batch_size
     int* mutex // batch_size
 ) {
-    std::array<std::uint8_t, n_qubytes> current_configs = configs[batch_index];
+    array<std::uint8_t, n_qubytes> current_configs;
+    for (std::int64_t i = 0; i < n_qubytes; ++i) {
+        current_configs[i] = configs[batch_index][i];
+    }
     auto [success, parity] = hamiltonian_apply_kernel<max_op_number, n_qubytes, particle_cut>(
         /*current_configs=*/current_configs,
         /*term_index=*/term_index,
@@ -729,7 +740,9 @@ __device__ void single_relative_kernel(
         mutex_lock(&mutex[batch_index]);
         if (score[batch_index] < key) {
             score[batch_index] = key;
-            result_configs[batch_index] = current_configs;
+            for (std::int64_t i = 0; i < n_qubytes; ++i) {
+                result_configs[batch_index][i] = current_configs[i];
+            }
         }
         mutex_unlock(&mutex[batch_index]);
     }
@@ -741,12 +754,12 @@ __global__ void single_relative_kernel_interface(
     std::int64_t batch_size,
     std::int64_t exclude_size,
     std::uint64_t seed,
-    const std::array<std::int16_t, max_op_number>* site, // term_number
-    const std::array<std::uint8_t, max_op_number>* kind, // term_number
-    const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
-    std::array<std::uint8_t, n_qubytes>* result_configs, // batch_size
+    const array<std::int16_t, max_op_number>* site, // term_number
+    const array<std::uint8_t, max_op_number>* kind, // term_number
+    const array<double, 2>* coef, // term_number
+    const array<std::uint8_t, n_qubytes>* configs, // batch_size
+    const array<std::uint8_t, n_qubytes>* exclude_configs, // exclude_size
+    array<std::uint8_t, n_qubytes>* result_configs, // batch_size
     double* score, // batch_size
     int* mutex // batch_size
 ) {
@@ -823,8 +836,8 @@ auto single_relative_interface(const torch::Tensor& configs, const torch::Tensor
 
     thrust::sort(
         policy,
-        reinterpret_cast<std::array<std::uint8_t, n_qubytes>*>(sorted_configs.data_ptr()),
-        reinterpret_cast<std::array<std::uint8_t, n_qubytes>*>(sorted_configs.data_ptr()) + batch_size,
+        reinterpret_cast<array<std::uint8_t, n_qubytes>*>(sorted_configs.data_ptr()),
+        reinterpret_cast<array<std::uint8_t, n_qubytes>*>(sorted_configs.data_ptr()) + batch_size,
         array_less<std::uint8_t, n_qubytes>()
     );
 
@@ -847,12 +860,12 @@ auto single_relative_interface(const torch::Tensor& configs, const torch::Tensor
         /*batch_size=*/batch_size,
         /*exclude_size=*/batch_size,
         /*seed=*/seed,
-        /*site=*/reinterpret_cast<const std::array<std::int16_t, max_op_number>*>(site.data_ptr()),
-        /*kind=*/reinterpret_cast<const std::array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
-        /*coef=*/reinterpret_cast<const std::array<double, 2>*>(coef.data_ptr()),
-        /*configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
-        /*exclude_configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(sorted_configs.data_ptr()),
-        /*result_configs=*/reinterpret_cast<std::array<std::uint8_t, n_qubytes>*>(result_configs.data_ptr()),
+        /*site=*/reinterpret_cast<const array<std::int16_t, max_op_number>*>(site.data_ptr()),
+        /*kind=*/reinterpret_cast<const array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
+        /*coef=*/reinterpret_cast<const array<double, 2>*>(coef.data_ptr()),
+        /*configs=*/reinterpret_cast<const array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
+        /*exclude_configs=*/reinterpret_cast<const array<std::uint8_t, n_qubytes>*>(sorted_configs.data_ptr()),
+        /*result_configs=*/reinterpret_cast<array<std::uint8_t, n_qubytes>*>(result_configs.data_ptr()),
         /*score=*/reinterpret_cast<double*>(score.data_ptr()),
         /*mutex=*/mutex
     );
