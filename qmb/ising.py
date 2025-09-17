@@ -10,6 +10,7 @@ import torch
 import tyro
 from .mlp import WaveFunctionNormal as MlpWaveFunction
 from .attention import WaveFunctionNormal as AttentionWaveFunction
+from .peps import PepsFunction
 from .hamiltonian import Hamiltonian
 from .model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
@@ -325,3 +326,45 @@ class AttentionConfig:
 
 
 Model.network_dict["attention"] = AttentionConfig
+
+
+@dataclasses.dataclass
+class PepsConfig:
+    """
+    The configuration of the PEPS network.
+    """
+
+    # The bond dimension of the network
+    D: typing.Annotated[int, tyro.conf.arg(aliases=["-d"])] = 4  # pylint: disable=invalid-name
+    # The cut-off bond dimension of the network
+    Dc: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 16  # pylint: disable=invalid-name
+    # Use complex tensors
+    use_complex: typing.Annotated[bool, tyro.conf.arg(aliases=["-z"])] = False
+
+    def create(self, model: Model) -> NetworkProto:
+        """
+        Create a PEPS network for the model.
+        """
+        logging.info(
+            "PEPS network configuration: "
+            "bond dimension: %d, "
+            "cut-off bond dimension: %d, "
+            "use complex: %s",
+            self.D,
+            self.Dc,
+            self.use_complex,
+        )
+
+        network = PepsFunction(
+            L1=model.m,
+            L2=model.n,
+            d=2,
+            D=self.D,
+            Dc=self.Dc,
+            use_complex=self.use_complex,
+        )
+
+        return network
+
+
+Model.network_dict["peps"] = PepsConfig
