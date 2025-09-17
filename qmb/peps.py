@@ -30,7 +30,7 @@ class PEPS(torch.nn.Module):
         """
         # pylint: disable=unsubscriptable-object
         # Order: L, U, D, R
-        tensor: torch.Tensor = self.tensors[l1, l2, config]
+        tensor: torch.Tensor = self.tensors[l1, l2, config.to(torch.int64)]
         if l2 == 0:
             tensor = tensor[:, :1, :, :, :]
         if l1 == 0:
