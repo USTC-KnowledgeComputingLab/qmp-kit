@@ -50,6 +50,8 @@ class CommonConfig:
     def __post_init__(self) -> None:
         if self.log_path is not None:
             self.log_path = pathlib.Path(self.log_path)
+        if self.parent_path is not None:
+            self.parent_path = pathlib.Path(self.parent_path)
         if self.device is not None:
             self.device = torch.device(self.device)
         if self.dtype is not None:
