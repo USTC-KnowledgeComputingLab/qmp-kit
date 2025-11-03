@@ -9,8 +9,10 @@ import torch
 import tyro
 from .mlp import WaveFunctionElectronUpDown as MlpWaveFunction
 from .attention import WaveFunctionElectronUpDown as AttentionWaveFunction
+from .transformers_mps import MpsFunction
 from .hamiltonian import Hamiltonian
 from .model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
+from .bitspack import unpack_int, pack_int
 
 
 @dataclasses.dataclass
@@ -54,6 +56,43 @@ class Model(ModelProto[ModelConfig]):
     network_dict: dict[str, type[NetworkConfigProto["Model"]]] = {}
 
     config_t = ModelConfig
+
+    def _hopping(self, config: torch.Tensor) -> typing.Generator[torch.Tensor]:
+        m, n = self.m, self.n
+
+        def _index(i: int, j: int, o: int) -> int:
+            if i % 2 == 1:
+                j = n - 1 - j
+            return (i * n + j) * 2 + o
+        
+        for o in range(2):
+            for i in range(m):
+                for j in range(n):
+                    if i != 0:
+                        if config[_index(i, j, o)] != config[_index(i - 1, j, o)]:
+                            new_config = config.clone()
+                            new_config[_index(i, j, o)] = config[_index(i - 1, j, o)]
+                            new_config[_index(i - 1, j, o)] = config[_index(i, j, o)]
+                            yield new_config
+                    if j != 0:
+                        if config[_index(i, j, o)] != config[_index(i, j - 1, o)]:
+                            new_config = config.clone()
+                            new_config[_index(i, j, o)] = config[_index(i, j - 1, o)]
+                            new_config[_index(i, j - 1, o)] = config[_index(i, j, o)]
+                            yield new_config
+
+    def hopping(self, config):
+        """
+        Perform a hopping operation on the given configuration.
+        """
+        config = unpack_int(config.unsqueeze(0), size=1, last_dim=self.m * self.n * 2).squeeze(0)
+        pool = list(self._hopping(config))
+        random_index = int(torch.randint(len(pool), ()).item())
+        new_config = pool[random_index]
+        new_pool = list(self._hopping(new_config))
+        new_config = pack_int(new_config.reshape([1, -1]), size=1).squeeze(0)
+
+        return new_config, len(pool), len(new_pool)
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
@@ -235,3 +274,33 @@ class AttentionConfig:
 
 
 Model.network_dict["attention"] = AttentionConfig
+
+@dataclasses.dataclass
+class MpsConfig:
+    """
+    The configuration of the MPS network.
+    """
+
+    # The bond dimension of the MPS
+    D: typing.Annotated[int, tyro.conf.arg(aliases=["-D"])] = 4
+
+    def create(self, model: Model) -> NetworkProto:
+        """
+        Create an MPS network for the model.
+        """
+        logging.info(
+            "MPS network configuration: "
+            "bond dimension: %d",
+            self.D,
+        )
+
+        network = MpsFunction(
+            L=model.m * model.n * 2,
+            d=2,
+            D=self.D,
+            use_complex=True,
+        )
+
+        return network
+    
+Model.network_dict["transformers_mps"] = MpsConfig
