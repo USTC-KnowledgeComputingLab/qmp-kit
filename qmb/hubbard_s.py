@@ -63,6 +63,8 @@ class Model(ModelProto[ModelConfig]):
     def _prepare_hamiltonian(cls, args: ModelConfig) -> dict[tuple[tuple[int, int], ...], complex]:
 
         def _index(i: int, j: int, o: int) -> int:
+            if i % 2 == 1:
+                j = args.n - 1 - j
             return (i * args.n + j) * 2 + o
 
         hamiltonian_dict: dict[tuple[tuple[int, int], ...], complex] = {}
@@ -136,7 +138,7 @@ class Model(ModelProto[ModelConfig]):
                 raise ValueError(f"Invalid string: {string}")
 
 
-model_dict["hubbard"] = Model
+model_dict["hubbard_s"] = Model
 
 
 @dataclasses.dataclass

@@ -11,6 +11,7 @@ from .model_dict import model_dict
 from . import openfermion as _  # type: ignore[no-redef]
 from . import fcidump as _  # type: ignore[no-redef]
 from . import hubbard as _  # type: ignore[no-redef]
+from . import hubbard_s as _  # type: ignore[no-redef]
 from . import free_fermion as _  # type: ignore[no-redef]
 from . import ising as _  # type: ignore[no-redef]
 from . import vmc as _  # type: ignore[no-redef]
