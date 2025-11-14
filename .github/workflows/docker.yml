@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: endersonmenezes/free-disk-space@v2
+      - uses: endersonmenezes/free-disk-space@v3
         with:
           remove_android: true
           remove_dotnet: true

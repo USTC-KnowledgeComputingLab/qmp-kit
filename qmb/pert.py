@@ -56,7 +56,7 @@ class PerturbationConfig:
             break
 
         hamiltonian_psi = model.apply_within(configs, psi, other_configs)
-        energy2_num = (hamiltonian_psi.conj() @ hamiltonian_psi).real / (psi.conj() @ psi).real
+        energy2_num = (hamiltonian_psi.conj() * hamiltonian_psi).real / (psi.conj() @ psi).real
         energy2_den = energy0 - model.diagonal_term(other_configs).real
         energy2 = (energy2_num / energy2_den).sum().item()
         logging.info("Correct energy is %.8f", energy2)

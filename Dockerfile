@@ -1,5 +1,5 @@
 # Use the specified CUDA base image with Rocky Linux 9
-FROM nvidia/cuda:13.0.1-cudnn-devel-rockylinux9
+FROM nvidia/cuda:13.0.2-cudnn-devel-rockylinux9
 
 # Install dependencies
 WORKDIR /app
