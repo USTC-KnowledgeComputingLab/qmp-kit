@@ -41,7 +41,7 @@ class CommonConfig:
     # The device to run on
     device: typing.Annotated[torch.device, tyro.conf.arg(aliases=["-D"])] = torch.device(type="cuda", index=0)
     # The dtype of the network, leave empty to skip modifying the dtype
-    dtype: typing.Annotated[str | None, tyro.conf.arg(aliases=["-T"])] = None
+    dtype: typing.Annotated[torch.dtype | None, tyro.conf.arg(aliases=["-T"])] = None
     # The maximum absolute step for the process, leave empty to loop forever
     max_absolute_step: typing.Annotated[int | None, tyro.conf.arg(aliases=["-A"])] = None
     # The maximum relative step for the process, leave empty to loop forever
@@ -50,8 +50,22 @@ class CommonConfig:
     def __post_init__(self) -> None:
         if self.log_path is not None:
             self.log_path = pathlib.Path(self.log_path)
+        if self.parent_path is not None:
+            self.parent_path = pathlib.Path(self.parent_path)
         if self.device is not None:
             self.device = torch.device(self.device)
+        if self.dtype is not None:
+            match self.dtype:
+                case "bfloat16":
+                    self.dtype = torch.bfloat16
+                case "float16" | "half":
+                    self.dtype = torch.float16
+                case "float32" | "float":
+                    self.dtype = torch.float32
+                case "float64" | "double":
+                    self.dtype = torch.float64
+                case _:
+                    raise ValueError(f"Unsupported dtype: {self.dtype}")
         if self.max_absolute_step is not None and self.max_relative_step is not None:
             raise ValueError("Both max_absolute_step and max_relative_step are set, please set only one of them.")
 
@@ -160,20 +174,7 @@ class CommonConfig:
             logging.info("Skipping loading state dict of the network")
 
         logging.info("Moving model to the device: %a", self.device)
-        network.to(device=self.device)
-        if self.dtype is not None:
-            logging.info("Changing network dtype to: %s", self.dtype)
-            match self.dtype:
-                case "bfloat16":
-                    network.bfloat16()
-                case "float16":
-                    network.half()
-                case "float32":
-                    network.float()
-                case "float64":
-                    network.double()
-                case _:
-                    raise ValueError(f"Unknown dtype: {self.dtype}")
+        network = network.to(device=self.device, dtype=self.dtype)
 
         logging.info("Compiling the network")
         network = torch.jit.script(network)  # type: ignore[assignment]
