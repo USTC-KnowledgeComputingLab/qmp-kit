@@ -21,6 +21,7 @@ from . import precompile as _  # type: ignore[no-redef]
 from . import list_loss as _  # type: ignore[no-redef]
 from . import chop_imag as _  # type: ignore[no-redef]
 from . import pert as _  # type: ignore[no-redef]
+from . import orbit as _  # type: ignore[no-redef]
 from . import run as _  # type: ignore[no-redef]
 
 
