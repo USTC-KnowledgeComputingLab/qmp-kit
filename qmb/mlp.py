@@ -48,14 +48,22 @@ class MLP(torch.nn.Module):
 
         dimensions: list[int] = [dim_input] + list(hidden_size) + [dim_output]
         linears: list[torch.nn.Module] = [select_linear_layer(i, j) for i, j in itertools.pairwise(dimensions)]
-        modules: list[torch.nn.Module] = [module for linear in linears for module in (linear, torch.nn.SiLU())][:-1]
-        self.model: torch.nn.Module = torch.nn.Sequential(*modules)
+        self.layers: torch.nn.ModuleList = torch.nn.ModuleList(linears)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass for the MLP.
         """
-        return self.model(x)
+        for index, layer in enumerate(self.layers):
+            y = layer(x)
+            if x.shape != y.shape:
+                x = y
+            else:
+                x = x + y
+            if index != len(self.layers) - 1:
+                x = torch.nn.functional.normalize(x, dim=-1)
+                x = torch.nn.functional.silu(x)
+        return x
 
 
 class WaveFunctionElectronUpDown(torch.nn.Module):
