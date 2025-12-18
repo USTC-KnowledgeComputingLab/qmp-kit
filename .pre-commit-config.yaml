@@ -44,11 +44,6 @@ repos:
   - id: clang-format
     types_or: [c++, c, cuda]
 
-- repo: https://github.com/pre-commit/mirrors-jshint
-  rev: v2.13.6
-  hooks:
-  - id: jshint
-
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.12.11
   hooks:
