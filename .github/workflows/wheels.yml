@@ -1,4 +1,6 @@
 name: Build wheels
+permissions:
+  contents: read
 
 on:
   - push
@@ -8,8 +10,6 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       - uses: actions/checkout@v6
