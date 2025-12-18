@@ -17,7 +17,7 @@ jobs:
       - name: Build wheel
         run: pipx run build
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: build-wheel
           path: dist/*.whl
