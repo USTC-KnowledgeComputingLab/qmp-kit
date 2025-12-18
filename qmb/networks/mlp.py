@@ -4,7 +4,7 @@ This file implements the MLP network from https://arxiv.org/pdf/2109.12606 with 
 
 import itertools
 import torch
-from .bitspack import pack_int, unpack_int
+from ..bitspack import pack_int, unpack_int
 
 
 class FakeLinear(torch.nn.Module):

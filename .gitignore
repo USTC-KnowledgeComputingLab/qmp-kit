@@ -2,7 +2,7 @@ __pycache__
 build
 env
 dist
-models
+/models
 _version.py
 .idea
 .vscode

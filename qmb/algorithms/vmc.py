@@ -8,9 +8,9 @@ import dataclasses
 import torch
 import torch.utils.tensorboard
 import tyro
-from .common import CommonConfig
-from .subcommand_dict import subcommand_dict
-from .optimizer import initialize_optimizer
+from ..common import CommonConfig
+from ..subcommand_dict import subcommand_dict
+from ..optimizer import initialize_optimizer
 
 
 @dataclasses.dataclass

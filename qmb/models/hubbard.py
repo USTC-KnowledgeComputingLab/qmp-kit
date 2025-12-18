@@ -7,10 +7,10 @@ import logging
 import dataclasses
 import torch
 import tyro
-from .mlp import WaveFunctionElectronUpDown as MlpWaveFunction
-from .attention import WaveFunctionElectronUpDown as AttentionWaveFunction
-from .hamiltonian import Hamiltonian
-from .model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
+from ..networks.mlp import WaveFunctionElectronUpDown as MlpWaveFunction
+from ..networks.attention import WaveFunctionElectronUpDown as AttentionWaveFunction
+from ..hamiltonian import Hamiltonian
+from ..model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
 @dataclasses.dataclass

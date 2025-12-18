@@ -7,8 +7,8 @@ import typing
 import dataclasses
 import tyro
 import torch.utils.tensorboard
-from .common import CommonConfig
-from .subcommand_dict import subcommand_dict
+from ..common import CommonConfig
+from ..subcommand_dict import subcommand_dict
 
 
 @dataclasses.dataclass

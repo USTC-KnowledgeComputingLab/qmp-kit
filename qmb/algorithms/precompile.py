@@ -6,8 +6,8 @@ import typing
 import dataclasses
 import torch
 import tyro
-from .model_dict import model_dict, ModelProto, NetworkProto
-from .subcommand_dict import subcommand_dict
+from ..model_dict import model_dict, ModelProto, NetworkProto
+from ..subcommand_dict import subcommand_dict
 
 
 @dataclasses.dataclass

@@ -11,11 +11,11 @@ import scipy
 import torch
 import torch.utils.tensorboard
 import tyro
-from . import losses
-from .common import CommonConfig
-from .subcommand_dict import subcommand_dict
-from .model_dict import ModelProto
-from .optimizer import initialize_optimizer, scale_learning_rate
+from .. import losses
+from ..common import CommonConfig
+from ..subcommand_dict import subcommand_dict
+from ..model_dict import ModelProto
+from ..optimizer import initialize_optimizer, scale_learning_rate
 
 
 @dataclasses.dataclass

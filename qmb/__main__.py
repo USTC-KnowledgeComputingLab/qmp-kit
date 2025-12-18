@@ -8,20 +8,18 @@ import omegaconf
 from .subcommand_dict import subcommand_dict
 from .common import CommonConfig
 from .model_dict import model_dict
-from . import openfermion as _  # type: ignore[no-redef]
-from . import fcidump as _  # type: ignore[no-redef]
-from . import hubbard as _  # type: ignore[no-redef]
-from . import free_fermion as _  # type: ignore[no-redef]
-from . import ising as _  # type: ignore[no-redef]
-from . import guide as _  # type: ignore[no-redef]
-from . import vmc as _  # type: ignore[no-redef]
-from . import haar as _  # type: ignore[no-redef]
-from . import rldiag as _  # type: ignore[no-redef]
-from . import precompile as _  # type: ignore[no-redef]
-from . import list_loss as _  # type: ignore[no-redef]
-from . import chop_imag as _  # type: ignore[no-redef]
-from . import pert as _  # type: ignore[no-redef]
-from . import run as _  # type: ignore[no-redef]
+from .models import openfermion as _  # type: ignore[no-redef]
+from .models import fcidump as _  # type: ignore[no-redef]
+from .models import hubbard as _  # type: ignore[no-redef]
+from .models import free_fermion as _  # type: ignore[no-redef]
+from .models import ising as _  # type: ignore[no-redef]
+from .algorithms import guide as _  # type: ignore[no-redef]
+from .algorithms import vmc as _  # type: ignore[no-redef]
+from .algorithms import haar as _  # type: ignore[no-redef]
+from .algorithms import rldiag as _  # type: ignore[no-redef]
+from .algorithms import precompile as _  # type: ignore[no-redef]
+from .algorithms import chop_imag as _  # type: ignore[no-redef]
+from .algorithms import pert as _  # type: ignore[no-redef]
 
 
 @hydra.main(version_base=None, config_path=str(pathlib.Path().resolve()), config_name="config")

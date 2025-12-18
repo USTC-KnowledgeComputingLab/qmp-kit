@@ -9,11 +9,11 @@ import functools
 import tyro
 import scipy
 import torch
-from .common import CommonConfig
-from .subcommand_dict import subcommand_dict
-from .model_dict import ModelProto
-from .optimizer import initialize_optimizer
-from .bitspack import pack_int
+from ..common import CommonConfig
+from ..subcommand_dict import subcommand_dict
+from ..model_dict import ModelProto
+from ..optimizer import initialize_optimizer
+from ..bitspack import pack_int
 
 
 def lanczos_energy(model: ModelProto, configs: torch.Tensor, step: int, threshold: float) -> tuple[float, torch.Tensor]:

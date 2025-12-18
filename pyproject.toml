@@ -54,8 +54,7 @@ Repository = "https://github.com/USTC-KnowledgeComputingLab/qmb.git"
 Issues = "https://github.com/USTC-KnowledgeComputingLab/qmb/issues"
 
 [project.scripts]
-qmb = "qmb.legacy:main"
-"qmb.hydra" = "qmb.__main__:main"
+qmp = "qmb.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["qmb"]

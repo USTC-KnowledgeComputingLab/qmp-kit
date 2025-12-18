@@ -3,7 +3,7 @@ This file implements the PEPS tensor network.
 """
 
 import torch
-from .bitspack import unpack_int
+from ..bitspack import unpack_int
 
 
 class PEPS(torch.nn.Module):

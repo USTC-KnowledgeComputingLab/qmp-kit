@@ -5,7 +5,7 @@ This network makes use of DeepSeekMoE architecture introduced in https://arxiv.o
 
 import typing
 import torch
-from .bitspack import pack_int, unpack_int
+from ..bitspack import pack_int, unpack_int
 
 
 class FeedForward(torch.nn.Module):

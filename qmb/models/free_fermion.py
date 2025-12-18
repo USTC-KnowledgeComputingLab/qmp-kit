@@ -7,8 +7,8 @@ import logging
 import dataclasses
 import torch
 import tyro
-from .hamiltonian import Hamiltonian
-from .model_dict import model_dict, ModelProto, NetworkConfigProto
+from ..hamiltonian import Hamiltonian
+from ..model_dict import model_dict, ModelProto, NetworkConfigProto
 
 
 @dataclasses.dataclass

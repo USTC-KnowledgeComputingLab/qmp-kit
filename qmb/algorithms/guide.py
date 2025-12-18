@@ -9,10 +9,10 @@ import omegaconf
 import torch
 import torch.utils.tensorboard
 import tyro
-from .common import CommonConfig
-from .subcommand_dict import subcommand_dict
-from .optimizer import initialize_optimizer
-from .model_dict import model_dict
+from ..common import CommonConfig
+from ..subcommand_dict import subcommand_dict
+from ..optimizer import initialize_optimizer
+from ..model_dict import model_dict
 
 
 @dataclasses.dataclass

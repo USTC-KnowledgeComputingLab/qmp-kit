@@ -8,11 +8,11 @@ import dataclasses
 import collections
 import torch
 import tyro
-from .mlp import WaveFunctionNormal as MlpWaveFunction
-from .attention import WaveFunctionNormal as AttentionWaveFunction
-from .peps import PepsFunction
-from .hamiltonian import Hamiltonian
-from .model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
+from ..networks.mlp import WaveFunctionNormal as MlpWaveFunction
+from ..networks.attention import WaveFunctionNormal as AttentionWaveFunction
+from ..networks.peps import PepsFunction
+from ..hamiltonian import Hamiltonian
+from ..model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
 @dataclasses.dataclass
