@@ -1,6 +1,6 @@
 #include <torch/extension.h>
 
-namespace qmb_hamiltonian_cpu {
+namespace qmp_hamiltonian_cpu {
 
 constexpr torch::DeviceType device = torch::kCPU;
 
@@ -553,14 +553,14 @@ auto find_relative_interface(
 #endif
 
 #if N_QUBYTES != 0
-#define QMB_LIBRARY_HELPER(x, y) qmb_hamiltonian_##x##_##y
-#define QMB_LIBRARY(x, y) QMB_LIBRARY_HELPER(x, y)
-TORCH_LIBRARY_IMPL(QMB_LIBRARY(N_QUBYTES, PARTICLE_CUT), CPU, m) {
+#define QMP_LIBRARY_HELPER(x, y) qmp_hamiltonian_##x##_##y
+#define QMP_LIBRARY(x, y) QMP_LIBRARY_HELPER(x, y)
+TORCH_LIBRARY_IMPL(QMP_LIBRARY(N_QUBYTES, PARTICLE_CUT), CPU, m) {
     m.impl("apply_within", apply_within_interface</*max_op_number=*/4, /*n_qubytes=*/N_QUBYTES, /*particle_cut=*/PARTICLE_CUT>);
     m.impl("find_relative", find_relative_interface</*max_op_number=*/4, /*n_qubytes=*/N_QUBYTES, /*particle_cut=*/PARTICLE_CUT>);
 }
-#undef QMB_LIBRARY
-#undef QMB_LIBRARY_HELPER
+#undef QMP_LIBRARY
+#undef QMP_LIBRARY_HELPER
 #endif
 
-} // namespace qmb_hamiltonian_cpu
+} // namespace qmp_hamiltonian_cpu

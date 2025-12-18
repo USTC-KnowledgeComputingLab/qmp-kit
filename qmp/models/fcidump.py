@@ -20,7 +20,7 @@ from ..networks.crossmlp import WaveFunction as CrossMlpWaveFunction
 from ..hamiltonian import Hamiltonian
 from ..model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
-QMB_MODEL_PATH = "QMB_MODEL_PATH"
+QMP_MODEL_PATH = "QMP_MODEL_PATH"
 
 
 @dataclasses.dataclass
@@ -40,8 +40,8 @@ class ModelConfig:
         if self.model_path is not None:
             self.model_path = pathlib.Path(self.model_path)
         else:
-            if QMB_MODEL_PATH in os.environ:
-                self.model_path = pathlib.Path(os.environ[QMB_MODEL_PATH])
+            if QMP_MODEL_PATH in os.environ:
+                self.model_path = pathlib.Path(os.environ[QMP_MODEL_PATH])
             else:
                 self.model_path = pathlib.Path("models")
 
@@ -150,7 +150,7 @@ class Model(ModelProto[ModelConfig]):
         model_file_name = model_file_name if model_file_name.exists() else model_path / model_name
 
         checksum = hashlib.sha256(model_file_name.read_bytes()).hexdigest() + "v5"
-        cache_file = platformdirs.user_cache_path("qmb", "kclab") / checksum
+        cache_file = platformdirs.user_cache_path("qmp", "kclab") / checksum
         if cache_file.exists():
             logging.info("Loading FCIDUMP metadata '%s' from file: %s", model_name, model_file_name)
             (n_orbit, n_electron, n_spin), _ = _read_fcidump(model_file_name, cached=True)

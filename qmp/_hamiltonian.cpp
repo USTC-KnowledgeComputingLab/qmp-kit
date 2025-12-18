@@ -1,7 +1,7 @@
 #include <pybind11/complex.h>
 #include <torch/extension.h>
 
-namespace qmb_hamiltonian {
+namespace qmp_hamiltonian {
 
 // The `prepare` function is responsible for parsing a raw Python dictionary representing Hamiltonian terms
 // and transforming it into a structured tuple of tensors. This tuple is then stored on the Python side
@@ -72,23 +72,23 @@ auto prepare(py::dict hamiltonian) {
 
 #if N_QUBYTES == 0
 // Expose the `prepare` function to Python.
-PYBIND11_MODULE(qmb_hamiltonian, m) {
+PYBIND11_MODULE(qmp_hamiltonian, m) {
     m.def("prepare", prepare</*max_op_number=*/4>, py::arg("hamiltonian"));
 }
 #endif
 
 #if N_QUBYTES != 0
-#define QMB_LIBRARY_HELPER(x, y) qmb_hamiltonian_##x##_##y
-#define QMB_LIBRARY(x, y) QMB_LIBRARY_HELPER(x, y)
-TORCH_LIBRARY_FRAGMENT(QMB_LIBRARY(N_QUBYTES, PARTICLE_CUT), m) {
+#define QMP_LIBRARY_HELPER(x, y) qmp_hamiltonian_##x##_##y
+#define QMP_LIBRARY(x, y) QMP_LIBRARY_HELPER(x, y)
+TORCH_LIBRARY_FRAGMENT(QMP_LIBRARY(N_QUBYTES, PARTICLE_CUT), m) {
     m.def("apply_within(Tensor configs_i, Tensor psi_i, Tensor configs_j, Tensor site, Tensor kind, Tensor coef) -> Tensor");
     m.def("find_relative(Tensor configs_i, Tensor psi_i, int count_selected, Tensor site, Tensor kind, Tensor coef, Tensor configs_exclude) -> Tensor"
     );
     m.def("diagonal_term(Tensor configs, Tensor site, Tensor kind, Tensor coef) -> Tensor");
     m.def("single_relative(Tensor configs, Tensor site, Tensor kind, Tensor coef) -> Tensor");
 }
-#undef QMB_LIBRARY
-#undef QMB_LIBRARY_HELPER
+#undef QMP_LIBRARY
+#undef QMP_LIBRARY_HELPER
 #endif
 
-} // namespace qmb_hamiltonian
+} // namespace qmp_hamiltonian
