@@ -218,25 +218,3 @@ class Hamiltonian:
         )
         psi_result = torch.view_as_complex(_diagonal_term(configs, self.site, self.kind, self.coef))
         return psi_result
-
-    def single_relative(self, configs: torch.Tensor) -> torch.Tensor:
-        """
-        Find a single relative configuration for each configurations.
-
-        Parameters
-        ----------
-        configs : torch.Tensor
-            A uint8 tensor of shape [batch_size, n_qubytes] representing the input configurations.
-
-        Returns
-        -------
-        torch.Tensor
-            A uint8 tensor of shape [batch_size, n_qubytes] representing the resulting configurations.
-        """
-        self._prepare_data(configs.device)
-        _single_relative: typing.Callable[[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]
-        _single_relative = getattr(
-            self._load_module(configs.device.type, configs.size(1), self.particle_cut), "single_relative"
-        )
-        configs_result = _single_relative(configs, self.site, self.kind, self.coef)
-        return configs_result

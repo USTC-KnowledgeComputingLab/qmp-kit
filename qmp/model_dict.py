@@ -194,21 +194,6 @@ class ModelProto(typing.Protocol[ModelConfig]):
             The diagonal term of the configurations.
         """
 
-    def single_relative(self, configs: torch.Tensor) -> torch.Tensor:
-        """
-        Find a single relative configuration for each configurations.
-
-        Parameters
-        ----------
-        configs : torch.Tensor
-            The configurations to find the single relative configuration for.
-
-        Returns
-        -------
-        torch.Tensor
-            The relative configuration.
-        """
-
     def show_config(self, config: torch.Tensor) -> str:
         """
         Converts a configuration tensor to a string representation.
