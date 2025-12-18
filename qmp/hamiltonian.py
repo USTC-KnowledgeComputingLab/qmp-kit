@@ -156,6 +156,41 @@ class Hamiltonian:
         )
         return psi_j
 
+    def apply_within_conjugate(
+        self,
+        configs_j: torch.Tensor,
+        psi_j: torch.Tensor,
+        configs_i: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Applies the conjugate transpose of the Hamiltonian to the given vector.
+
+        Parameters
+        ----------
+        configs_j : torch.Tensor
+            A uint8 tensor of shape [batch_size_j, n_qubytes] representing the input configurations.
+        psi_j : torch.Tensor
+            A complex64 tensor of shape [batch_size_j] representing the input amplitudes on the given configurations.
+        configs_i : torch.Tensor
+            A uint8 tensor of shape [batch_size_i, n_qubytes] representing the output configurations.
+
+        Returns
+        -------
+        torch.Tensor
+            A tensor of shape [batch_size_i] representing the output amplitudes on the given configurations.
+        """
+        self._prepare_data(configs_j.device)
+        _apply_within_conjugate: typing.Callable[
+            [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor
+        ]
+        _apply_within_conjugate = getattr(
+            self._load_module(configs_j.device.type, configs_j.size(1), self.particle_cut), "apply_within_conjugate"
+        )
+        psi_i = torch.view_as_complex(
+            _apply_within_conjugate(configs_j, torch.view_as_real(psi_j), configs_i, self.site, self.kind, self.coef)
+        )
+        return psi_i
+
     def find_relative(
         self,
         configs_i: torch.Tensor,
