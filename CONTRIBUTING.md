@@ -12,7 +12,7 @@ If you have any questions, please use the GitHub discussions.
 ## Code structure
 
 The code structure of qmp is following the standard Python package structure.
-We organize the package code into the folder named `qmp`, and the tests into the folder named `tests`.
+We organize the package code into the folder named `qmp`.
 The file `pyproject.toml` is used to define the package metadata.
 There are also some other files such as `.clang-format`, `.pre-commit-config.yaml` used to format and lint the code.
 
@@ -26,7 +26,7 @@ Please make sure that your code is properly formatted, linted and typed when you
 In Python code conventions, use double quotes (") for string literals and single quotes (') for character literals.
 The comments in the code are expected to be enough for other developers to understand your code.
 Please add docstrings to the code in NumPy style.
-If necessary, please update documentations and add tests for your changes.
+If necessary, please update documentations for your changes.
 Any warning should be fixed when submitting a pull request.
 At last, please check carefully on the correctness and the robustness of the code when submitting a pull request.
 
