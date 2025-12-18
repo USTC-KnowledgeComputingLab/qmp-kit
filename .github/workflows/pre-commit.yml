@@ -1,4 +1,6 @@
 name: Pre-commit Hooks
+permissions:
+  contents: read
 
 on:
   - push
