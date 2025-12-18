@@ -4,7 +4,7 @@ The quantum many-body problem kit (`qmp-kit`) is a powerful tool designed to sol
 
 ## About The Project
 
-This repository hosts a [Python][python-url] package named `qmp-kit`, dedicated to solving quantum-many-body problem.
+This repository hosts a [Python][python-url] package named `qmp-kit`, dedicated to solving the quantum-many-body problem.
 It implements a suite of algorithms and interfaces with various model descriptors, such as the [OpenFermion][openfermion-url] format and FCIDUMP.
 Additionally, `qmp` can efficiently utilize accelerators such as GPU(s) to enhance its performance.
 The package's main entry point is a command line interface (CLI) application, also named `qmp`.
