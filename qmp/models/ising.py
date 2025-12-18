@@ -2,7 +2,6 @@
 This file offers an interface for defining Ising-like models on a two-dimensional lattice.
 """
 
-import typing
 import logging
 import dataclasses
 import collections
@@ -229,9 +228,6 @@ class Model(ModelProto[ModelConfig]):
 
     def diagonal_term(self, configs: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.diagonal_term(configs)
-
-    def single_relative(self, configs: torch.Tensor) -> torch.Tensor:
-        return self.hamiltonian.single_relative(configs)
 
     def show_config(self, config: torch.Tensor) -> str:
         string = "".join(f"{i:08b}"[::-1] for i in config.cpu().numpy())
