@@ -3,7 +3,7 @@ requires = ["setuptools>=78.0,<80.10", "setuptools_scm>=8.2,<9.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "qmb"
+name = "qmp-kit"
 dynamic = ["version"]
 dependencies = [
   "platformdirs>=4.3.7,<4.6.0",
@@ -48,22 +48,22 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/USTC-KnowledgeComputingLab/qmb"
-Documentation = "https://github.com/USTC-KnowledgeComputingLab/qmb"
-Repository = "https://github.com/USTC-KnowledgeComputingLab/qmb.git"
-Issues = "https://github.com/USTC-KnowledgeComputingLab/qmb/issues"
+Homepage = "https://github.com/USTC-KnowledgeComputingLab/qmp-kit"
+Documentation = "https://github.com/USTC-KnowledgeComputingLab/qmp-kit"
+Repository = "https://github.com/USTC-KnowledgeComputingLab/qmp-kit.git"
+Issues = "https://github.com/USTC-KnowledgeComputingLab/qmp-kit/issues"
 
 [project.scripts]
-qmp = "qmb.__main__:main"
+qmp = "qmp.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["qmb"]
+include = ["qmp"]
 
 [tool.setuptools.package-data]
-qmb = ["*.cpp", "*.cu"]
+qmp = ["*.cpp", "*.cu"]
 
 [tool.setuptools_scm]
-version_file = "qmb/_version.py"
+version_file = "qmp/_version.py"
 version_scheme = "no-guess-dev"
 fallback_version = "0.0.0"
 
@@ -73,7 +73,7 @@ column_limit = 200
 
 [tool.pylint]
 max-line-length = 200
-ignore-paths = ["qmb/_version.py"]
+ignore-paths = ["qmp/_version.py"]
 disable = ["duplicate-code"]
 
 [tool.mypy]
@@ -83,4 +83,4 @@ disallow_incomplete_defs = true
 check_untyped_defs = true
 
 [tool.pytest.ini_options]
-addopts = "--cov=qmb"
+addopts = "--cov=qmp"
