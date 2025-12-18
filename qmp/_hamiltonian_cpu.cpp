@@ -163,23 +163,23 @@ void apply_within_kernel(
 template<std::int64_t max_op_number, std::int64_t n_qubytes, std::int64_t particle_cut>
 void apply_within_conjugate_kernel(
     std::int64_t term_index,
-    std::int64_t batch_index,
+    std::int64_t result_batch_index,
     std::int64_t term_number,
     std::int64_t batch_size,
     std::int64_t result_batch_size,
     const std::array<std::int16_t, max_op_number>* site, // term_number
     const std::array<std::uint8_t, max_op_number>* kind, // term_number
     const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<double, 2>* psi, // batch_size
+    const std::array<std::uint8_t, n_qubytes>* sorted_configs, // batch_size
+    const std::array<double, 2>* sorted_psi, // batch_size
     const std::array<std::uint8_t, n_qubytes>* result_configs, // result_batch_size
     std::array<double, 2>* result_psi
 ) {
-    std::array<std::uint8_t, n_qubytes> current_configs = configs[batch_index];
+    std::array<std::uint8_t, n_qubytes> current_configs = result_configs[result_batch_index];
     auto [success, parity] = hamiltonian_apply_conjugate_kernel<max_op_number, n_qubytes, particle_cut>(
         /*current_configs=*/current_configs,
         /*term_index=*/term_index,
-        /*batch_index=*/batch_index,
+        /*batch_index=*/result_batch_index,
         /*site=*/site,
         /*kind=*/kind
     );
@@ -189,14 +189,14 @@ void apply_within_conjugate_kernel(
     }
     success = false;
     std::int64_t low = 0;
-    std::int64_t high = result_batch_size - 1;
+    std::int64_t high = batch_size - 1;
     std::int64_t mid = 0;
     auto less = array_less<std::uint8_t, n_qubytes>();
     while (low <= high) {
         mid = (low + high) / 2;
-        if (less(current_configs, result_configs[mid])) {
+        if (less(current_configs, sorted_configs[mid])) {
             high = mid - 1;
-        } else if (less(result_configs[mid], current_configs)) {
+        } else if (less(sorted_configs[mid], current_configs)) {
             low = mid + 1;
         } else {
             success = true;
@@ -207,8 +207,8 @@ void apply_within_conjugate_kernel(
         return;
     }
     std::int8_t sign = parity ? -1 : +1;
-    result_psi[mid][0] += sign * (coef[term_index][0] * psi[batch_index][0] + coef[term_index][1] * psi[batch_index][1]);
-    result_psi[mid][1] += sign * (coef[term_index][0] * psi[batch_index][1] - coef[term_index][1] * psi[batch_index][0]);
+    result_psi[result_batch_index][0] += sign * (coef[term_index][0] * sorted_psi[mid][0] + coef[term_index][1] * sorted_psi[mid][1]);
+    result_psi[result_batch_index][1] += sign * (coef[term_index][0] * sorted_psi[mid][1] - coef[term_index][1] * sorted_psi[mid][0]);
 }
 
 template<std::int64_t max_op_number, std::int64_t n_qubytes, std::int64_t particle_cut>
@@ -252,24 +252,24 @@ void apply_within_conjugate_kernel_interface(
     const std::array<std::int16_t, max_op_number>* site, // term_number
     const std::array<std::uint8_t, max_op_number>* kind, // term_number
     const std::array<double, 2>* coef, // term_number
-    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
-    const std::array<double, 2>* psi, // batch_size
+    const std::array<std::uint8_t, n_qubytes>* sorted_configs, // batch_size
+    const std::array<double, 2>* sorted_psi, // batch_size
     const std::array<std::uint8_t, n_qubytes>* result_configs, // result_batch_size
     std::array<double, 2>* result_psi
 ) {
     for (std::int64_t term_index = 0; term_index < term_number; ++term_index) {
-        for (std::int64_t batch_index = 0; batch_index < batch_size; ++batch_index) {
+        for (std::int64_t result_batch_index = 0; result_batch_index < result_batch_size; ++result_batch_index) {
             apply_within_conjugate_kernel<max_op_number, n_qubytes, particle_cut>(
                 /*term_index=*/term_index,
-                /*batch_index=*/batch_index,
+                /*result_batch_index=*/result_batch_index,
                 /*term_number=*/term_number,
                 /*batch_size=*/batch_size,
                 /*result_batch_size=*/result_batch_size,
                 /*site=*/site,
                 /*kind=*/kind,
                 /*coef=*/coef,
-                /*configs=*/configs,
-                /*psi=*/psi,
+                /*sorted_configs=*/sorted_configs,
+                /*sorted_psi=*/sorted_psi,
                 /*result_configs=*/result_configs,
                 /*result_psi=*/result_psi
             );
@@ -434,20 +434,21 @@ auto apply_within_conjugate_interface(
     TORCH_CHECK(coef.size(0) == term_number, "coef size must match the provided term_number.");
     TORCH_CHECK(coef.size(1) == 2, "coef must contain 2 elements for each term.");
 
-    auto result_sort_index = torch::arange(result_batch_size, torch::TensorOptions().dtype(torch::kInt64).device(torch::kCPU, device_id));
+    auto configs_sort_index = torch::arange(batch_size, torch::TensorOptions().dtype(torch::kInt64).device(torch::kCPU, device_id));
 
     std::sort(
-        reinterpret_cast<std::int64_t*>(result_sort_index.data_ptr()),
-        reinterpret_cast<std::int64_t*>(result_sort_index.data_ptr()) + result_batch_size,
-        [&result_configs](std::int64_t i1, std::int64_t i2) {
+        reinterpret_cast<std::int64_t*>(configs_sort_index.data_ptr()),
+        reinterpret_cast<std::int64_t*>(configs_sort_index.data_ptr()) + batch_size,
+        [&configs](std::int64_t i1, std::int64_t i2) {
             return array_less<std::uint8_t, n_qubytes>()(
-                reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(result_configs.data_ptr())[i1],
-                reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(result_configs.data_ptr())[i2]
+                reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(configs.data_ptr())[i1],
+                reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(configs.data_ptr())[i2]
             );
         }
     );
-    auto sorted_result_configs = result_configs.index({result_sort_index});
-    auto sorted_result_psi = torch::zeros({result_batch_size, 2}, torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU, device_id));
+    auto sorted_configs = configs.index({configs_sort_index});
+    auto sorted_psi = psi.index({configs_sort_index});
+    auto result_psi = torch::zeros({result_batch_size, 2}, torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU, device_id));
 
     apply_within_conjugate_kernel_interface<max_op_number, n_qubytes, particle_cut>(
         /*term_number=*/term_number,
@@ -456,14 +457,12 @@ auto apply_within_conjugate_interface(
         /*site=*/reinterpret_cast<const std::array<std::int16_t, max_op_number>*>(site.data_ptr()),
         /*kind=*/reinterpret_cast<const std::array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
         /*coef=*/reinterpret_cast<const std::array<double, 2>*>(coef.data_ptr()),
-        /*configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
-        /*psi=*/reinterpret_cast<const std::array<double, 2>*>(psi.data_ptr()),
-        /*result_configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(sorted_result_configs.data_ptr()),
-        /*result_psi=*/reinterpret_cast<std::array<double, 2>*>(sorted_result_psi.data_ptr())
+        /*sorted_configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(sorted_configs.data_ptr()),
+        /*sorted_psi=*/reinterpret_cast<const std::array<double, 2>*>(sorted_psi.data_ptr()),
+        /*result_configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(result_configs.data_ptr()),
+        /*result_psi=*/reinterpret_cast<std::array<double, 2>*>(result_psi.data_ptr())
     );
 
-    auto result_psi = torch::zeros_like(sorted_result_psi);
-    result_psi.index_put_({result_sort_index}, sorted_result_psi);
     return result_psi;
 }
 
