@@ -40,7 +40,7 @@ classifiers = [
 [project.optional-dependencies]
 dev = [
   "yapf~=0.43.0",
-  "pylint~=3.3.6",
+  "pylint~=4.0.4",
   "mypy>=1.15,<1.19",
   "pytest>=8.3.5,<9.1.0",
   "pytest-cov>=6.0,<7.1",
