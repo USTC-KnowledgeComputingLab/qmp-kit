@@ -10,7 +10,6 @@ import functools
 import scipy
 import torch
 import torch.utils.tensorboard
-import tyro
 from .. import losses
 from ..common import CommonConfig
 from ..subcommand_dict import subcommand_dict
@@ -272,48 +271,42 @@ class HaarConfig:
 
     # pylint: disable=too-many-instance-attributes
 
-    common: typing.Annotated[CommonConfig, tyro.conf.OmitArgPrefixes]
+    common: CommonConfig
 
     # The sampling count from neural network
-    sampling_count_from_neural_network: typing.Annotated[int, tyro.conf.arg(aliases=["-n"])] = 1024
+    sampling_count_from_neural_network: int = 1024
     # The sampling count from last iteration
-    sampling_count_from_last_iteration: typing.Annotated[int, tyro.conf.arg(aliases=["-f"])] = 1024
+    sampling_count_from_last_iteration: int = 1024
     # The extend count for the Krylov subspace
-    krylov_extend_count: typing.Annotated[
-        int, tyro.conf.arg(aliases=["-c"], help_behavior_hint="default: 2048 if krylov_single_extend else 64")
-    ] = -1
+    krylov_extend_count: int = -1
     # Whether to extend Krylov subspace before all iterations
-    krylov_extend_first: typing.Annotated[bool, tyro.conf.arg(aliases=["-z"])] = False
+    krylov_extend_first: bool = False
     # Whether to extend only once for Krylov subspace
-    krylov_single_extend: typing.Annotated[bool, tyro.conf.arg(aliases=["-1"])] = False
+    krylov_single_extend: bool = False
     # The number of Krylov iterations to perform
-    krylov_iteration: typing.Annotated[int, tyro.conf.arg(aliases=["-k"])] = 32
+    krylov_iteration: int = 32
     # The threshold for the Krylov iteration
-    krylov_threshold: typing.Annotated[float, tyro.conf.arg(aliases=["-d"])] = 1e-8
+    krylov_threshold: float = 1e-8
     # The name of the loss function to use
-    loss_name: typing.Annotated[str, tyro.conf.arg(aliases=["-l"])] = "sum_filtered_angle_scaled_log"
+    loss_name: str = "sum_filtered_angle_scaled_log"
     # Whether to use the global optimizer
-    global_opt: typing.Annotated[bool, tyro.conf.arg(aliases=["-g"])] = False
+    global_opt: bool = False
     # Whether to use LBFGS instead of Adam
-    use_lbfgs: typing.Annotated[bool, tyro.conf.arg(aliases=["-2"])] = False
+    use_lbfgs: bool = False
     # The learning rate for the local optimizer
-    learning_rate: typing.Annotated[
-        float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")
-    ] = -1
+    learning_rate: float = -1
     # The number of steps for the local optimizer
-    local_step: typing.Annotated[
-        int, tyro.conf.arg(aliases=["-s"], help_behavior_hint="(default: 10000 for Adam, 1000 for LBFGS)")
-    ] = -1
+    local_step: int = -1
     # The early break loss threshold for local optimization
-    local_loss: typing.Annotated[float, tyro.conf.arg(aliases=["-t"])] = 1e-8
+    local_loss: float = 1e-8
     # The number of psi values to log after local optimization
-    logging_psi: typing.Annotated[int, tyro.conf.arg(aliases=["-p"])] = 30
+    logging_psi: int = 30
     # The local batch count used to avoid memory overflow in generating configurations
-    local_batch_count_generation: typing.Annotated[int, tyro.conf.arg(aliases=["-m"])] = 1
+    local_batch_count_generation: int = 1
     # The local batch count used to avoid memory overflow in apply within
-    local_batch_count_apply_within: typing.Annotated[int, tyro.conf.arg(aliases=["-a"])] = 1
+    local_batch_count_apply_within: int = 1
     # The local batch count used to avoid memory overflow in loss function
-    local_batch_count_loss_function: typing.Annotated[int, tyro.conf.arg(aliases=["-b"])] = 1
+    local_batch_count_loss_function: int = 1
 
     def __post_init__(self) -> None:
         if self.learning_rate == -1:

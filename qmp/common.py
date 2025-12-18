@@ -8,7 +8,6 @@ import typing
 import pathlib
 import dataclasses
 import torch
-import tyro
 from .model_dict import model_dict, ModelProto, NetworkProto
 from .random_engine import dump_random_engine_state, load_random_engine_state
 
@@ -22,30 +21,30 @@ class CommonConfig:
     # pylint: disable=too-many-instance-attributes
 
     # The model name
-    model_name: typing.Annotated[str, tyro.conf.Positional, tyro.conf.arg(metavar="MODEL")]
+    model_name: str
     # The network name
-    network_name: typing.Annotated[str, tyro.conf.Positional, tyro.conf.arg(metavar="NETWORK")]
+    network_name: str
     # Arguments for physical model
-    physics_args: typing.Annotated[tuple[str, ...], tyro.conf.arg(aliases=["-P"]), tyro.conf.UseAppendAction] = ()
+    physics_args: tuple[str, ...] = ()
     # Arguments for network
-    network_args: typing.Annotated[tuple[str, ...], tyro.conf.arg(aliases=["-N"]), tyro.conf.UseAppendAction] = ()
+    network_args: tuple[str, ...] = ()
 
     # The log path
-    log_path: typing.Annotated[pathlib.Path, tyro.conf.arg(aliases=["-L"])] = pathlib.Path("logs")
+    log_path: pathlib.Path = pathlib.Path("logs")
     # The log path for parent job job name, it is only used for loading the checkpoint from the parent job, leave empty to use the current job name
-    parent_path: typing.Annotated[pathlib.Path | None, tyro.conf.arg(aliases=["-F"])] = None
+    parent_path: pathlib.Path | None = None
     # The manual random seed, leave empty for set seed automatically
-    random_seed: typing.Annotated[int | None, tyro.conf.arg(aliases=["-S"])] = None
+    random_seed: int | None = None
     # The interval to save the checkpoint
-    checkpoint_interval: typing.Annotated[int, tyro.conf.arg(aliases=["-I"])] = 5
+    checkpoint_interval: int = 5
     # The device to run on
-    device: typing.Annotated[torch.device, tyro.conf.arg(aliases=["-D"])] = torch.device(type="cuda", index=0)
+    device: torch.device = torch.device(type="cuda", index=0)
     # The dtype of the network, leave empty to skip modifying the dtype
-    dtype: typing.Annotated[torch.dtype | None, tyro.conf.arg(aliases=["-T"])] = None
+    dtype: torch.dtype | None = None
     # The maximum absolute step for the process, leave empty to loop forever
-    max_absolute_step: typing.Annotated[int | None, tyro.conf.arg(aliases=["-A"])] = None
+    max_absolute_step: int | None = None
     # The maximum relative step for the process, leave empty to loop forever
-    max_relative_step: typing.Annotated[int | None, tyro.conf.arg(aliases=["-R"])] = None
+    max_relative_step: int | None = None
 
     def __post_init__(self) -> None:
         if self.log_path is not None:
@@ -156,8 +155,11 @@ class CommonConfig:
             logging.info("Random seed not specified, using current seed: %d", torch.seed())
 
         if model_param is None:
-            logging.info("Parsing configurations for model: %s with arguments: %a", self.model_name, self.physics_args)
-            model_param = tyro.cli(model_config_t, args=self.physics_args)
+            raise ValueError(
+                "model_param must be provided when calling main(). "
+                "This should be an instance of the model's config class, "
+                "typically created from Hydra configuration."
+            )
         else:
             logging.info("The model parameters are given as %a, skipping parsing model arguments", model_param)
         logging.info("Loading the model")
@@ -165,10 +167,11 @@ class CommonConfig:
         logging.info("Physical model loaded successfully")
 
         if network_param is None:
-            logging.info(
-                "Parsing configurations for network: %s with arguments: %a", self.network_name, self.network_args
+            raise ValueError(
+                "network_param must be provided when calling main(). "
+                "This should be an instance of the network's config class, "
+                "typically created from Hydra configuration."
             )
-            network_param = tyro.cli(network_config_t, args=self.network_args)
         else:
             logging.info("The network parameters are given as %a, skipping parsing network arguments", network_param)
         logging.info("Initializing the network")
