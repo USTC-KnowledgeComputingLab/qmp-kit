@@ -30,7 +30,11 @@ class PrecompileConfig:
         model_t = model_dict[self.model_name]
         network_config_t = model_t.network_dict["mlp"]
         if model_param is None:
-            raise ValueError("model_param must be provided when calling main()")
+            raise ValueError(
+                "model_param must be provided when calling main(). "
+                "This should be an instance of the model's config class, "
+                "typically created from Hydra configuration."
+            )
         model: ModelProto = model_t(model_param)
         network: NetworkProto = network_config_t().create(model).to(device=self.device)
         configs_i, psi_i, _, _ = network.generate_unique(1)

@@ -149,7 +149,11 @@ class CommonConfig:
             logging.info("Random seed not specified, using current seed: %d", torch.seed())
 
         if model_param is None:
-            raise ValueError("model_param must be provided when calling main()")
+            raise ValueError(
+                "model_param must be provided when calling main(). "
+                "This should be an instance of the model's config class, "
+                "typically created from Hydra configuration."
+            )
         else:
             logging.info("The model parameters are given as %a, skipping parsing model arguments", model_param)
         logging.info("Loading the model")
@@ -157,7 +161,11 @@ class CommonConfig:
         logging.info("Physical model loaded successfully")
 
         if network_param is None:
-            raise ValueError("network_param must be provided when calling main()")
+            raise ValueError(
+                "network_param must be provided when calling main(). "
+                "This should be an instance of the network's config class, "
+                "typically created from Hydra configuration."
+            )
         else:
             logging.info("The network parameters are given as %a, skipping parsing network arguments", network_param)
         logging.info("Initializing the network")
