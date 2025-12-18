@@ -11,9 +11,9 @@ The package's main entry point is a command line interface (CLI) application, al
 
 ## Getting Started
 
-To run this application locally, GPU(s) with [CUDA][cuda-url] support and a properly installed GPU driver are required, which is typically included with the installation of the CUDA Toolkit.
+To run this application locally, you need GPU(s) with [CUDA][cuda-url] support and a properly installed GPU driver (typically included with the CUDA Toolkit installation).
 
-### Installation
+### Local Installation
 
 To install locally, users first needs to install the [CUDA toolkit][cuda-url].
 
