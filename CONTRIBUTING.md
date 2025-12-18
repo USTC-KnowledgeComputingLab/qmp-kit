@@ -26,7 +26,7 @@ Please make sure that your code is properly formatted, linted and typed when you
 In Python code conventions, use double quotes (") for string literals and single quotes (') for character literals.
 The comments in the code are expected to be enough for other developers to understand your code.
 Please add docstrings to the code in NumPy style.
-If necessary, please update documentations and add tests for your changes.
+If necessary, please update documentations for your changes.
 Any warning should be fixed when submitting a pull request.
 At last, please check carefully on the correctness and the robustness of the code when submitting a pull request.
 
