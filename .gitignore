@@ -1,17 +1,16 @@
-__pycache__
-build
-env
-dist
-/models
-_version.py
-.idea
-.vscode
-.coverage*
-events.*
-*.so
-*.hdf5
-*.npy
-*.pt
-*.pth
-*.log
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
 *.egg-info
+
+# Virtual environments
+.venv
+
+# CodeQL
+_codeql_detected_source_root
+
+# Models
+/models
