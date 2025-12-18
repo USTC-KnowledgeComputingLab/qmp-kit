@@ -36,8 +36,8 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-  "ruff~=0.14.6",
-  "mypy>=1.15,<1.19",
+  "mypy>=1.19.1",
+  "ruff>=0.14.10",
 ]
 
 [project.urls]
