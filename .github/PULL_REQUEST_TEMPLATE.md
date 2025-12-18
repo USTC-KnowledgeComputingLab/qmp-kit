@@ -1,4 +1,4 @@
-<!-- Thank you for contributing to qmb! -->
+<!-- Thank you for contributing to qmp-kit! -->
 
 # Description
 
