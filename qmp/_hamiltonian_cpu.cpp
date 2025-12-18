@@ -545,6 +545,120 @@ auto find_relative_interface(
     return unique_nonzero_result_config;
 }
 
+template<std::int64_t max_op_number, std::int64_t n_qubytes, std::int64_t particle_cut>
+void diagonal_term_kernel(
+    std::int64_t term_index,
+    std::int64_t batch_index,
+    std::int64_t term_number,
+    std::int64_t batch_size,
+    const std::array<std::int16_t, max_op_number>* site, // term_number
+    const std::array<std::uint8_t, max_op_number>* kind, // term_number
+    const std::array<double, 2>* coef, // term_number
+    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
+    std::array<double, 2>* result_psi
+) {
+    std::array<std::uint8_t, n_qubytes> current_configs = configs[batch_index];
+    auto [success, parity] = hamiltonian_apply_kernel<max_op_number, n_qubytes, particle_cut>(
+        /*current_configs=*/current_configs,
+        /*term_index=*/term_index,
+        /*batch_index=*/batch_index,
+        /*site=*/site,
+        /*kind=*/kind
+    );
+
+    if (!success) {
+        return;
+    }
+    auto less = array_less<std::uint8_t, n_qubytes>();
+    if (less(current_configs, configs[batch_index]) || less(configs[batch_index], current_configs)) {
+        return; // The term does not apply to the current configuration
+    }
+    std::int8_t sign = parity ? -1 : +1;
+    result_psi[batch_index][0] += sign * coef[term_index][0];
+    result_psi[batch_index][1] += sign * coef[term_index][1];
+}
+
+template<std::int64_t max_op_number, std::int64_t n_qubytes, std::int64_t particle_cut>
+void diagonal_term_kernel_interface(
+    std::int64_t term_number,
+    std::int64_t batch_size,
+    const std::array<std::int16_t, max_op_number>* site, // term_number
+    const std::array<std::uint8_t, max_op_number>* kind, // term_number
+    const std::array<double, 2>* coef, // term_number
+    const std::array<std::uint8_t, n_qubytes>* configs, // batch_size
+    std::array<double, 2>* result_psi
+) {
+    for (std::int64_t term_index = 0; term_index < term_number; ++term_index) {
+        for (std::int64_t batch_index = 0; batch_index < batch_size; ++batch_index) {
+            diagonal_term_kernel<max_op_number, n_qubytes, particle_cut>(
+                /*term_index=*/term_index,
+                /*batch_index=*/batch_index,
+                /*term_number=*/term_number,
+                /*batch_size=*/batch_size,
+                /*site=*/site,
+                /*kind=*/kind,
+                /*coef=*/coef,
+                /*configs=*/configs,
+                /*result_psi=*/result_psi
+            );
+        }
+    }
+}
+
+template<std::int64_t max_op_number, std::int64_t n_qubytes, std::int64_t particle_cut>
+auto diagonal_term_interface(const torch::Tensor& configs, const torch::Tensor& site, const torch::Tensor& kind, const torch::Tensor& coef)
+    -> torch::Tensor {
+    std::int64_t device_id = configs.device().index();
+    std::int64_t batch_size = configs.size(0);
+    std::int64_t term_number = site.size(0);
+
+    TORCH_CHECK(configs.device().type() == torch::kCPU, "configs must be on CPU.")
+    TORCH_CHECK(configs.device().index() == device_id, "configs must be on the same device as others.");
+    TORCH_CHECK(configs.is_contiguous(), "configs must be contiguous.")
+    TORCH_CHECK(configs.dtype() == torch::kUInt8, "configs must be uint8.")
+    TORCH_CHECK(configs.dim() == 2, "configs must be 2D.")
+    TORCH_CHECK(configs.size(0) == batch_size, "configs batch size must match the provided batch_size.");
+    TORCH_CHECK(configs.size(1) == n_qubytes, "configs must have the same number of qubits as the provided n_qubytes.");
+
+    TORCH_CHECK(site.device().type() == torch::kCPU, "site must be on CPU.")
+    TORCH_CHECK(site.device().index() == device_id, "site must be on the same device as others.");
+    TORCH_CHECK(site.is_contiguous(), "site must be contiguous.")
+    TORCH_CHECK(site.dtype() == torch::kInt16, "site must be int16.")
+    TORCH_CHECK(site.dim() == 2, "site must be 2D.")
+    TORCH_CHECK(site.size(0) == term_number, "site size must match the provided term_number.");
+    TORCH_CHECK(site.size(1) == max_op_number, "site must match the provided max_op_number.");
+
+    TORCH_CHECK(kind.device().type() == torch::kCPU, "kind must be on CPU.")
+    TORCH_CHECK(kind.device().index() == device_id, "kind must be on the same device as others.");
+    TORCH_CHECK(kind.is_contiguous(), "kind must be contiguous.")
+    TORCH_CHECK(kind.dtype() == torch::kUInt8, "kind must be uint8.")
+    TORCH_CHECK(kind.dim() == 2, "kind must be 2D.")
+    TORCH_CHECK(kind.size(0) == term_number, "kind size must match the provided term_number.");
+    TORCH_CHECK(kind.size(1) == max_op_number, "kind must match the provided max_op_number.");
+
+    TORCH_CHECK(coef.device().type() == torch::kCPU, "coef must be on CPU.")
+    TORCH_CHECK(coef.device().index() == device_id, "coef must be on the same device as others.");
+    TORCH_CHECK(coef.is_contiguous(), "coef must be contiguous.")
+    TORCH_CHECK(coef.dtype() == torch::kFloat64, "coef must be float64.")
+    TORCH_CHECK(coef.dim() == 2, "coef must be 2D.")
+    TORCH_CHECK(coef.size(0) == term_number, "coef size must match the provided term_number.");
+    TORCH_CHECK(coef.size(1) == 2, "coef must contain 2 elements for each term.");
+
+    auto result_psi = torch::zeros({batch_size, 2}, torch::TensorOptions().dtype(torch::kFloat64).device(device, device_id));
+
+    diagonal_term_kernel_interface<max_op_number, n_qubytes, particle_cut>(
+        /*term_number=*/term_number,
+        /*batch_size=*/batch_size,
+        /*site=*/reinterpret_cast<const std::array<std::int16_t, max_op_number>*>(site.data_ptr()),
+        /*kind=*/reinterpret_cast<const std::array<std::uint8_t, max_op_number>*>(kind.data_ptr()),
+        /*coef=*/reinterpret_cast<const std::array<double, 2>*>(coef.data_ptr()),
+        /*configs=*/reinterpret_cast<const std::array<std::uint8_t, n_qubytes>*>(configs.data_ptr()),
+        /*result_psi=*/reinterpret_cast<std::array<double, 2>*>(result_psi.data_ptr())
+    );
+
+    return result_psi;
+}
+
 #ifndef N_QUBYTES
 #define N_QUBYTES 0
 #endif
@@ -558,6 +672,7 @@ auto find_relative_interface(
 TORCH_LIBRARY_IMPL(QMP_LIBRARY(N_QUBYTES, PARTICLE_CUT), CPU, m) {
     m.impl("apply_within", apply_within_interface</*max_op_number=*/4, /*n_qubytes=*/N_QUBYTES, /*particle_cut=*/PARTICLE_CUT>);
     m.impl("find_relative", find_relative_interface</*max_op_number=*/4, /*n_qubytes=*/N_QUBYTES, /*particle_cut=*/PARTICLE_CUT>);
+    m.impl("diagonal_term", diagonal_term_interface</*max_op_number=*/4, /*n_qubytes=*/N_QUBYTES, /*particle_cut=*/PARTICLE_CUT>);
 }
 #undef QMP_LIBRARY
 #undef QMP_LIBRARY_HELPER
