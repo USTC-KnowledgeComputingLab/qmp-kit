@@ -7,9 +7,9 @@ import typing
 import dataclasses
 import torch
 import torch.utils.tensorboard
-from ..common import CommonConfig
-from ..subcommand_dict import subcommand_dict
-from ..optimizer import initialize_optimizer
+from ..utility.common import CommonConfig
+from ..utility.subcommand_dict import subcommand_dict
+from ..utility.optimizer import initialize_optimizer
 
 
 @dataclasses.dataclass

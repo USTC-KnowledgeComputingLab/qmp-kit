@@ -135,7 +135,7 @@ class Hamiltonian:
         configs_i : torch.Tensor
             A uint8 tensor of shape [batch_size_i, n_qubytes] representing the input configurations.
         psi_i : torch.Tensor
-            A complex64 tensor of shape [batch_size_i] representing the input amplitudes on the girven configurations.
+            A complex64 tensor of shape [batch_size_i] representing the input amplitudes on the given configurations.
         configs_j : torch.Tensor
             A uint8 tensor of shape [batch_size_j, n_qubytes] representing the output configurations.
 
@@ -171,7 +171,7 @@ class Hamiltonian:
         configs_i : torch.Tensor
             A uint8 tensor of shape [batch_size, n_qubytes] representing the input configurations.
         psi_i : torch.Tensor
-            A complex64 tensor of shape [batch_size] representing the input amplitudes on the girven configurations.
+            A complex64 tensor of shape [batch_size] representing the input amplitudes on the given configurations.
         count_selected : int
             The number of selected configurations to be returned.
         configs_exclude : torch.Tensor, optional

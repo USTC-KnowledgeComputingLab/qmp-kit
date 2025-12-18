@@ -10,11 +10,11 @@ import functools
 import scipy
 import torch
 import torch.utils.tensorboard
-from .. import losses
-from ..common import CommonConfig
-from ..subcommand_dict import subcommand_dict
-from ..model_dict import ModelProto
-from ..optimizer import initialize_optimizer, scale_learning_rate
+from ..utility import losses
+from ..utility.common import CommonConfig
+from ..utility.subcommand_dict import subcommand_dict
+from ..utility.model_dict import ModelProto
+from ..utility.optimizer import initialize_optimizer, scale_learning_rate
 
 
 @dataclasses.dataclass

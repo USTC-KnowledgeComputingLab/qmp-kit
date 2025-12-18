@@ -10,7 +10,7 @@ from ..networks.mlp import WaveFunctionNormal as MlpWaveFunction
 from ..networks.attention import WaveFunctionNormal as AttentionWaveFunction
 from ..networks.peps import PepsFunction
 from ..hamiltonian import Hamiltonian
-from ..model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
+from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
 @dataclasses.dataclass

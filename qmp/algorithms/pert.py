@@ -5,8 +5,8 @@ This file implements a perturbation estimator from haar.
 import logging
 import typing
 import dataclasses
-from ..common import CommonConfig
-from ..subcommand_dict import subcommand_dict
+from ..utility.common import CommonConfig
+from ..utility.subcommand_dict import subcommand_dict
 
 
 @dataclasses.dataclass

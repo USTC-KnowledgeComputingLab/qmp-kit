@@ -5,8 +5,8 @@ This file precompiles essential extensions to run specific model.
 import typing
 import dataclasses
 import torch
-from ..model_dict import model_dict, ModelProto, NetworkProto
-from ..subcommand_dict import subcommand_dict
+from ..utility.model_dict import model_dict, ModelProto, NetworkProto
+from ..utility.subcommand_dict import subcommand_dict
 
 
 @dataclasses.dataclass
