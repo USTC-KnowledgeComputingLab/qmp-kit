@@ -1,4 +1,6 @@
 name: Build wheels
+permissions:
+  contents: read
 
 on:
   - push
