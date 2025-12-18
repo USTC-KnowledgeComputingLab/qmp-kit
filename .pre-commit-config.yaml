@@ -49,22 +49,17 @@ repos:
   hooks:
   - id: jshint
 
-- repo: https://github.com/pylint-dev/pylint
-  rev: v3.3.1
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.12.11
   hooks:
-  - id: pylint
-    language: system
+  - id: ruff-check
+    args: [--fix]
+  - id: ruff-format
 
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.13.0
   hooks:
   - id: mypy
-    language: system
-
-- repo: https://github.com/google/yapf
-  rev: v0.40.2
-  hooks:
-  - id: yapf
     language: system
 
 - repo: https://github.com/Lucas-C/pre-commit-hooks

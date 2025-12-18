@@ -39,8 +39,7 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-  "yapf~=0.43.0",
-  "pylint~=3.3.6",
+  "ruff~=0.14.6",
   "mypy>=1.15,<1.19",
   "pytest>=8.3.5,<9.1.0",
   "pytest-cov>=6.0,<7.1",
@@ -55,6 +54,7 @@ Issues = "https://github.com/USTC-KnowledgeComputingLab/qmp-kit/issues"
 
 [project.scripts]
 qmp = "qmp.__main__:main"
+qmp-kit = "qmp.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["qmp"]
@@ -67,14 +67,16 @@ version_file = "qmp/_version.py"
 version_scheme = "no-guess-dev"
 fallback_version = "0.0.0"
 
-[tool.yapf]
-based_on_style = "google"
-column_limit = 200
+[tool.ruff]
+line-length = 120
 
-[tool.pylint]
-max-line-length = 200
-ignore-paths = ["qmp/_version.py"]
-disable = ["duplicate-code"]
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E741", "E743", "F841"]
+
+[tool.ruff.format]
 
 [tool.mypy]
 disallow_untyped_calls = true
