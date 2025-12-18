@@ -30,7 +30,9 @@ class ModelConfig:
             raise ValueError("The dimensions of the free fermion model must be positive integers.")
 
         if self.electron_number < 0 or self.electron_number > self.m * self.n:
-            raise ValueError(f"The electron number {self.electron_number} is out of bounds for a {self.m}x{self.n} lattice. Each site can host up to one electron.")
+            raise ValueError(
+                f"The electron number {self.electron_number} is out of bounds for a {self.m}x{self.n} lattice. Each site can host up to one electron."
+            )
 
 
 class Model(ModelProto[ModelConfig]):
@@ -48,7 +50,6 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def _prepare_hamiltonian(cls, args: ModelConfig) -> dict[tuple[tuple[int, int], ...], complex]:
-
         def _index(i: int, j: int) -> int:
             return i + j * args.m
 
@@ -70,7 +71,7 @@ class Model(ModelProto[ModelConfig]):
         hamiltonian = torch.zeros((sites, sites), dtype=torch.complex128)
         for ((site_1, _), (site_2, _)), value in hamiltonian_dict.items():
             hamiltonian[site_1, site_2] = torch.tensor(value, dtype=torch.complex128)
-        return torch.linalg.eigh(hamiltonian).eigenvalues[:self.electron_number].sum().item()  # pylint: disable=not-callable
+        return torch.linalg.eigh(hamiltonian).eigenvalues[: self.electron_number].sum().item()  # pylint: disable=not-callable
 
     def __init__(
         self,
@@ -99,7 +100,13 @@ class Model(ModelProto[ModelConfig]):
     def apply_within(self, configs_i: torch.Tensor, psi_i: torch.Tensor, configs_j: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.apply_within(configs_i, psi_i, configs_j)
 
-    def find_relative(self, configs_i: torch.Tensor, psi_i: torch.Tensor, count_selected: int, configs_exclude: torch.Tensor | None = None) -> torch.Tensor:
+    def find_relative(
+        self,
+        configs_i: torch.Tensor,
+        psi_i: torch.Tensor,
+        count_selected: int,
+        configs_exclude: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         return self.hamiltonian.find_relative(configs_i, psi_i, count_selected, configs_exclude)
 
     def diagonal_term(self, configs: torch.Tensor) -> torch.Tensor:
@@ -110,7 +117,13 @@ class Model(ModelProto[ModelConfig]):
 
     def show_config(self, config: torch.Tensor) -> str:
         string = "".join(f"{i:08b}"[::-1] for i in config.cpu().numpy())
-        return "[" + ".".join("".join("-" if string[i + j * self.m] == "0" else "x" for i in range(self.m)) for j in range(self.n)) + "]"
+        return (
+            "["
+            + ".".join(
+                "".join("-" if string[i + j * self.m] == "0" else "x" for i in range(self.m)) for j in range(self.n)
+            )
+            + "]"
+        )
 
 
 model_dict["free_fermion"] = Model

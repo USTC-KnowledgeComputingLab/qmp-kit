@@ -67,15 +67,16 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            *,
-            double_sites: int,  # Number of qubits, where each pair of qubits represents a site in the MLP model
-            physical_dim: int,  # Dimension of the physical space, which is always 2 for MLP
-            is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true for MLP
-            spin_up: int,  # Number of spin-up electrons
-            spin_down: int,  # Number of spin-down electrons
-            hidden_size: tuple[int, ...],  # Hidden layer sizes for the MLPs used in the amplitude and phase networks
-            ordering: int | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
+        self,
+        *,
+        double_sites: int,  # Number of qubits, where each pair of qubits represents a site in the MLP model
+        physical_dim: int,  # Dimension of the physical space, which is always 2 for MLP
+        is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true for MLP
+        spin_up: int,  # Number of spin-up electrons
+        spin_down: int,  # Number of spin-down electrons
+        hidden_size: tuple[int, ...],  # Hidden layer sizes for the MLPs used in the amplitude and phase networks
+        ordering: int
+        | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
     ) -> None:
         super().__init__()
         assert double_sites % 2 == 0
@@ -91,7 +92,9 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
         # The amplitude network accept qubits from previous sites and outputs a vector of dimension 4,
         # representing the configuration of two qubits on the current site.
         # And the phase network accept qubits from all sites and outputs the phase,
-        self.amplitude: torch.nn.ModuleList = torch.nn.ModuleList([MLP(i * 2, 4, self.hidden_size) for i in range(self.sites)])
+        self.amplitude: torch.nn.ModuleList = torch.nn.ModuleList(
+            [MLP(i * 2, 4, self.hidden_size) for i in range(self.sites)]
+        )
         self.phase: torch.nn.Module = MLP(self.double_sites, 1, self.hidden_size)
 
         # Site Ordering Configuration
@@ -103,7 +106,15 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
         self.ordering: torch.Tensor
         self.register_buffer("ordering", torch.tensor(ordering, dtype=torch.int64))
         self.ordering_reversed: torch.Tensor
-        self.register_buffer("ordering_reversed", torch.scatter(torch.zeros(self.sites, dtype=torch.int64), 0, self.ordering, torch.arange(self.sites, dtype=torch.int64)))
+        self.register_buffer(
+            "ordering_reversed",
+            torch.scatter(
+                torch.zeros(self.sites, dtype=torch.int64),
+                0,
+                self.ordering,
+                torch.arange(self.sites, dtype=torch.int64),
+            ),
+        )
 
         # Dummy Parameter for Device and Dtype Retrieval
         # This parameter is used to infer the device and dtype of the model.
@@ -185,7 +196,9 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
         for i, amplitude_m in enumerate(self.amplitude):
             # delta_amplitude: batch_size * 2 * 2
             # delta_amplitude represents the amplitude changes for the configurations at the new site.
-            delta_amplitude: torch.Tensor = amplitude_m(x_float[:, :i].view([batch_size, 2 * i])).view([batch_size, 2, 2])
+            delta_amplitude: torch.Tensor = amplitude_m(x_float[:, :i].view([batch_size, 2 * i])).view(
+                [batch_size, 2, 2]
+            )
             # Apply a filter mask to the amplitude to ensure the conservation of particle number.
             delta_amplitude = delta_amplitude + torch.where(self._mask(x[:, :i]), 0, -torch.inf)
 
@@ -239,7 +252,9 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
                 start_index = j * local_batch_size_block + min(j, remainder)
                 end_index = start_index + current_local_batch_size_block
                 batch_indices_block = torch.arange(start_index, end_index, device=device, dtype=torch.int64)
-                delta_amplitude_block = amplitude_m(x_float.view([local_batch_size, 2 * i])[batch_indices_block]).view([current_local_batch_size_block, 2, 2])
+                delta_amplitude_block = amplitude_m(x_float.view([local_batch_size, 2 * i])[batch_indices_block]).view(
+                    [current_local_batch_size_block, 2, 2]
+                )
                 delta_amplitude_block_list.append(delta_amplitude_block)
             delta_amplitude: torch.Tensor = torch.cat(delta_amplitude_block_list)
 
@@ -259,14 +274,24 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
             # Get max perturbed prob
             Z: torch.Tensor = L.max(dim=-1).values.view([local_batch_size, 1])
             # Evaluate the conditioned prob
-            tildeL: torch.Tensor = -torch.log(torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L))
+            tildeL: torch.Tensor = -torch.log(
+                torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L)
+            )
 
             # Calculate appended configurations for 4 adds
             # local_batch_size * current_site * 2 + local_batch_size * 1 * 2
-            x0: torch.Tensor = torch.cat([x, torch.tensor([[0, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
-            x1: torch.Tensor = torch.cat([x, torch.tensor([[0, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
-            x2: torch.Tensor = torch.cat([x, torch.tensor([[1, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
-            x3: torch.Tensor = torch.cat([x, torch.tensor([[1, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
+            x0: torch.Tensor = torch.cat(
+                [x, torch.tensor([[0, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
+            x1: torch.Tensor = torch.cat(
+                [x, torch.tensor([[0, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
+            x2: torch.Tensor = torch.cat(
+                [x, torch.tensor([[1, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
+            x3: torch.Tensor = torch.cat(
+                [x, torch.tensor([[1, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
 
             # Cat all configurations to get x : new_local_batch_size * (current_size+1) * 2
             # (un)perturbed prob : new_local_batch_size
@@ -321,13 +346,14 @@ class WaveFunctionNormal(torch.nn.Module):
     """
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            *,
-            sites: int,  # Number of qubits
-            physical_dim: int,  # Dimension of the physical space, which is always 2 for MLP
-            is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true for MLP
-            hidden_size: tuple[int, ...],  # Hidden layer sizes for the MLPs used in the amplitude and phase networks
-            ordering: int | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
+        self,
+        *,
+        sites: int,  # Number of qubits
+        physical_dim: int,  # Dimension of the physical space, which is always 2 for MLP
+        is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true for MLP
+        hidden_size: tuple[int, ...],  # Hidden layer sizes for the MLPs used in the amplitude and phase networks
+        ordering: int
+        | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
     ) -> None:
         super().__init__()
         self.sites: int = sites
@@ -338,7 +364,9 @@ class WaveFunctionNormal(torch.nn.Module):
         # Amplitude and Phase Networks for Each Site
         # The amplitude network takes in qubits from previous sites and outputs a vector of dimension 2, representing the configuration of the qubit at the current site.
         # And the phase network accept qubits from all sites and outputs the phase,
-        self.amplitude: torch.nn.ModuleList = torch.nn.ModuleList([MLP(i, 2, self.hidden_size) for i in range(self.sites)])
+        self.amplitude: torch.nn.ModuleList = torch.nn.ModuleList(
+            [MLP(i, 2, self.hidden_size) for i in range(self.sites)]
+        )
         self.phase: torch.nn.Module = MLP(self.sites, 1, self.hidden_size)
 
         # Site Ordering Configuration
@@ -350,7 +378,15 @@ class WaveFunctionNormal(torch.nn.Module):
         self.ordering: torch.Tensor
         self.register_buffer("ordering", torch.tensor(ordering, dtype=torch.int64))
         self.ordering_reversed: torch.Tensor
-        self.register_buffer("ordering_reversed", torch.scatter(torch.zeros(self.sites, dtype=torch.int64), 0, self.ordering, torch.arange(self.sites, dtype=torch.int64)))
+        self.register_buffer(
+            "ordering_reversed",
+            torch.scatter(
+                torch.zeros(self.sites, dtype=torch.int64),
+                0,
+                self.ordering,
+                torch.arange(self.sites, dtype=torch.int64),
+            ),
+        )
 
         # Dummy Parameter for Device and Dtype Retrieval
         # This parameter is used to infer the device and dtype of the model.
@@ -440,7 +476,9 @@ class WaveFunctionNormal(torch.nn.Module):
                 start_index = j * local_batch_size_block + min(j, remainder)
                 end_index = start_index + current_local_batch_size_block
                 batch_indices_block = torch.arange(start_index, end_index, device=device, dtype=torch.int64)
-                delta_amplitude_block = amplitude_m(x_float.view([local_batch_size, i])[batch_indices_block]).view([current_local_batch_size_block, 2])
+                delta_amplitude_block = amplitude_m(x_float.view([local_batch_size, i])[batch_indices_block]).view(
+                    [current_local_batch_size_block, 2]
+                )
                 delta_amplitude_block_list.append(delta_amplitude_block)
             delta_amplitude: torch.Tensor = torch.cat(delta_amplitude_block_list)
 
@@ -457,12 +495,18 @@ class WaveFunctionNormal(torch.nn.Module):
             # Get max perturbed prob
             Z: torch.Tensor = L.max(dim=-1).values.view([local_batch_size, 1])
             # Evaluate the conditioned prob
-            tildeL: torch.Tensor = -torch.log(torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L))
+            tildeL: torch.Tensor = -torch.log(
+                torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L)
+            )
 
             # Calculate appended configurations for 2 adds
             # local_batch_size * current_site + local_batch_size * 1
-            x0: torch.Tensor = torch.cat([x, torch.tensor([0], device=device, dtype=torch.uint8).expand(local_batch_size, -1)], dim=1)
-            x1: torch.Tensor = torch.cat([x, torch.tensor([1], device=device, dtype=torch.uint8).expand(local_batch_size, -1)], dim=1)
+            x0: torch.Tensor = torch.cat(
+                [x, torch.tensor([0], device=device, dtype=torch.uint8).expand(local_batch_size, -1)], dim=1
+            )
+            x1: torch.Tensor = torch.cat(
+                [x, torch.tensor([1], device=device, dtype=torch.uint8).expand(local_batch_size, -1)], dim=1
+            )
 
             # Cat all configurations to get x : new_local_batch_size * (current_size+1) * 2
             # (un)perturbed prob : new_local_batch_size

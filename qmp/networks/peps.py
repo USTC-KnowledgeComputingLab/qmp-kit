@@ -22,7 +22,9 @@ class PEPS(torch.nn.Module):
         self.Dc: int = Dc
         self.use_complex: bool = use_complex
 
-        self.tensors = torch.nn.Parameter(torch.randn([L1, L2, d, D, D, D, D], dtype=torch.complex128 if use_complex else torch.float64))
+        self.tensors = torch.nn.Parameter(
+            torch.randn([L1, L2, d, D, D, D, D], dtype=torch.complex128 if use_complex else torch.float64)
+        )
 
     def _tensor(self, l1: int, l2: int, config: torch.Tensor) -> torch.Tensor:
         """
@@ -74,9 +76,9 @@ class PEPS(torch.nn.Module):
             u_tensor, s_tensor, v_tensor = torch.linalg.svd(tensor, full_matrices=False)  # pylint: disable=not-callable
             middle_size = s_tensor.shape[-1]
             if middle_size > self.Dc:
-                u_tensor = u_tensor[:, :, :self.Dc]
-                s_tensor = s_tensor[:, :self.Dc]
-                v_tensor = v_tensor[:, :self.Dc, :]
+                u_tensor = u_tensor[:, :, : self.Dc]
+                s_tensor = s_tensor[:, : self.Dc]
+                v_tensor = v_tensor[:, : self.Dc, :]
             double[l2] = v_tensor.reshape([b, -1, u, d, r])
             double[l2 - 1] = torch.einsum("bludm,bmr,br->bludr", double[l2 - 1], u_tensor, s_tensor)
         # tensor shape is still: b l u d r
@@ -95,7 +97,9 @@ class PEPS(torch.nn.Module):
         """
         Forward pass of the PEPS tensor network.
         """
-        tensors: list[list[torch.Tensor]] = [[self._tensor(l1, l2, configs[:, (l1 * self.L2) + l2]) for l2 in range(self.L2)] for l1 in range(self.L1)]
+        tensors: list[list[torch.Tensor]] = [
+            [self._tensor(l1, l2, configs[:, (l1 * self.L2) + l2]) for l2 in range(self.L2)] for l1 in range(self.L1)
+        ]
         return self._contract(tensors)
 
 

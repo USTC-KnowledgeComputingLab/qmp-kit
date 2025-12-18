@@ -46,18 +46,28 @@ def lanczos_energy(model: ModelProto, configs: torch.Tensor, step: int, threshol
 
     if len(beta) == 0:
         return alpha[0].item(), v[0]
-    vals, vecs = scipy.linalg.eigh_tridiagonal(torch.stack(alpha, dim=0).cpu(), torch.stack(beta, dim=0).cpu(), lapack_driver="stebz", select="i", select_range=(0, 0))
+    vals, vecs = scipy.linalg.eigh_tridiagonal(
+        torch.stack(alpha, dim=0).cpu(),
+        torch.stack(beta, dim=0).cpu(),
+        lapack_driver="stebz",
+        select="i",
+        select_range=(0, 0),
+    )
     energy = torch.as_tensor(vals[0])
-    result = functools.reduce(torch.add, (weight[0] * vector.to(device=configs.device) for weight, vector in zip(vecs, v)))
+    result = functools.reduce(
+        torch.add, (weight[0] * vector.to(device=configs.device) for weight, vector in zip(vecs, v))
+    )
     return energy.item(), result
 
 
-def config_contributions(model: ModelProto, base_configs: torch.Tensor, active_configs: torch.Tensor, state: torch.Tensor) -> torch.Tensor:
+def config_contributions(
+    model: ModelProto, base_configs: torch.Tensor, active_configs: torch.Tensor, state: torch.Tensor
+) -> torch.Tensor:
     """
     Calculate the config contribution for the given configurations pool of the ground state approximation.
     """
-    base_state = state[:base_configs.size(0)]
-    active_state = state[base_configs.size(0):]
+    base_state = state[: base_configs.size(0)]
+    active_state = state[base_configs.size(0) :]
     num = (active_state.conj() * model.apply_within(base_configs, base_state, active_configs)).real * 2
     den = (base_state.conj() @ base_state).real
     result = num / den
@@ -136,7 +146,9 @@ class RldiagConfig:
                 )
             else:
                 # The packed string
-                configs = torch.tensor([[int(i) for i in self.initial_config.split(",")]], dtype=torch.uint8, device=self.common.device)
+                configs = torch.tensor(
+                    [[int(i) for i in self.initial_config.split(",")]], dtype=torch.uint8, device=self.common.device
+                )
             if "rldiag" not in data:
                 data["rldiag"] = {"global": 0, "local": 0, "configs": configs}
             else:
@@ -167,7 +179,9 @@ class RldiagConfig:
             remained_configs = configs[action]
             pruned_configs = configs[torch.logical_not(action)]
             expanded_configs = model.single_relative(remained_configs)  # There are duplicated config here
-            effective_expanded_configs, previous_to_effective = torch.unique(expanded_configs, dim=0, return_inverse=True)
+            effective_expanded_configs, previous_to_effective = torch.unique(
+                expanded_configs, dim=0, return_inverse=True
+            )
             old_configs = torch.cat([remained_configs, pruned_configs])
             new_configs = torch.cat([remained_configs, effective_expanded_configs])
             configs = new_configs
@@ -185,7 +199,12 @@ class RldiagConfig:
             new_energy, new_state = lanczos_energy(model, configs, self.lanczos_step, self.lanczos_threshold)
             last_state = new_state
             energy = new_energy
-            logging.info("Current energy is %.10f, Reference energy is %.10f, Energy error is %.10f", energy, model.ref_energy, energy - model.ref_energy)
+            logging.info(
+                "Current energy is %.10f, Reference energy is %.10f, Energy error is %.10f",
+                energy,
+                model.ref_energy,
+                energy - model.ref_energy,
+            )
             writer.add_scalar("rldiag/energy/state/global", energy, data["rldiag"]["global"])  # type: ignore[no-untyped-call]
             writer.add_scalar("rldiag/energy/state/local", energy, data["rldiag"]["local"])  # type: ignore[no-untyped-call]
             writer.add_scalar("rldiag/energy/error/global", energy - model.ref_energy, data["rldiag"]["global"])  # type: ignore[no-untyped-call]
@@ -196,7 +215,9 @@ class RldiagConfig:
                 data["rldiag"]["base"] = energy
 
             old_contribution = config_contributions(model, remained_configs, pruned_configs, old_state)
-            effective_new_contribution = config_contributions(model, remained_configs, effective_expanded_configs, new_state)
+            effective_new_contribution = config_contributions(
+                model, remained_configs, effective_expanded_configs, new_state
+            )
             new_contribution = effective_new_contribution[previous_to_effective]
             contribution = torch.cat([old_contribution, new_contribution])
             configs_for_training = torch.cat([pruned_configs, remained_configs])

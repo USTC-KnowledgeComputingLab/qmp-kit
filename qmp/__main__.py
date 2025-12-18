@@ -2,6 +2,8 @@
 This is the main entry point for the command line application.
 """
 
+# ruff: noqa: F401
+
 import pathlib
 import hydra
 import omegaconf

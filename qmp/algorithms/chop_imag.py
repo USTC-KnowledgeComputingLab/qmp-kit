@@ -34,9 +34,7 @@ class ChopImagConfig:
         model, _, data = self.common.main(model_param=model_param, network_param=network_param)
 
         logging.info(
-            "Arguments Summary: "
-            "Chop Size: %d, "
-            "Second Order Magnitude: %.10f",
+            "Arguments Summary: Chop Size: %d, Second Order Magnitude: %.10f",
             self.chop_size,
             self.second_order_magnitude,
         )
@@ -62,7 +60,9 @@ class ChopImagConfig:
             hamiltonian_psi = model.apply_within(configs, psi, configs)
             psi_hamiltonian_psi = (psi.conj() @ hamiltonian_psi).real
             energy = psi_hamiltonian_psi
-            logging.info("The energy: %.10f, The energy error is %.10f", energy.item(), energy.item() - model.ref_energy)
+            logging.info(
+                "The energy: %.10f, The energy error is %.10f", energy.item(), energy.item() - model.ref_energy
+            )
             writer.add_scalar("chop_imag/energy", energy.item(), i)  # type: ignore[no-untyped-call]
             writer.add_scalar("chop_imag/error", energy.item() - model.ref_energy, i)  # type: ignore[no-untyped-call]
             writer.flush()  # type: ignore[no-untyped-call]
@@ -76,10 +76,10 @@ class ChopImagConfig:
             else:
                 second_order = (psi.conj() * psi).real
                 rate = second_order.argsort()
-            unselected = rate[:self.chop_size]
+            unselected = rate[: self.chop_size]
             ordered_configs.append(configs[unselected])
             ordered_psi.append(psi[unselected])
-            selected = rate[self.chop_size:]
+            selected = rate[self.chop_size :]
             if len(selected) == 0:
                 break
             configs = configs[selected]

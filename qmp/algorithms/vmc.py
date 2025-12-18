@@ -32,7 +32,9 @@ class VmcConfig:
     # Whether to use LBFGS instead of Adam
     use_lbfgs: typing.Annotated[bool, tyro.conf.arg(aliases=["-2"])] = False
     # The learning rate for the local optimizer
-    learning_rate: typing.Annotated[float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")] = -1
+    learning_rate: typing.Annotated[
+        float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")
+    ] = -1
     # The number of steps for the local optimizer
     local_step: typing.Annotated[int, tyro.conf.arg(aliases=["-s"])] = 1000
 
@@ -90,7 +92,9 @@ class VmcConfig:
                 configs_dst = configs_i
             else:
                 configs_src = configs_i
-                configs_dst = torch.cat([configs_i, model.find_relative(configs_i, psi_i, self.relative_count - len(configs_i))])
+                configs_dst = torch.cat(
+                    [configs_i, model.find_relative(configs_i, psi_i, self.relative_count - len(configs_i))]
+                )
             logging.info("Relative configurations calculated, count: %d", len(configs_dst))
 
             optimizer = initialize_optimizer(
@@ -119,7 +123,12 @@ class VmcConfig:
 
             for i in range(self.local_step):
                 energy: torch.Tensor = optimizer.step(closure)  # type: ignore[assignment,arg-type]
-                logging.info("Local optimization in progress, step: %d, energy: %.10f, ref energy: %.10f", i, energy.item(), model.ref_energy)
+                logging.info(
+                    "Local optimization in progress, step: %d, energy: %.10f, ref energy: %.10f",
+                    i,
+                    energy.item(),
+                    model.ref_energy,
+                )
                 writer.add_scalar("vmc/energy", energy, data["vmc"]["local"])  # type: ignore[no-untyped-call]
                 writer.add_scalar("vmc/error", energy - model.ref_energy, data["vmc"]["local"])  # type: ignore[no-untyped-call]
                 data["vmc"]["local"] += 1

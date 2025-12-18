@@ -34,7 +34,9 @@ class GuideConfig:
     # Whether to use LBFGS instead of Adam
     use_lbfgs: typing.Annotated[bool, tyro.conf.arg(aliases=["-2"])] = False
     # The learning rate for the local optimizer
-    learning_rate: typing.Annotated[float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")] = -1
+    learning_rate: typing.Annotated[
+        float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")
+    ] = -1
     # The number of steps for the local optimizer
     local_step: typing.Annotated[int, tyro.conf.arg(aliases=["-s"])] = 1000
     # The number of steps for the distribution optimizer
@@ -44,7 +46,13 @@ class GuideConfig:
         if self.learning_rate == -1:
             self.learning_rate = 1 if self.use_lbfgs else 1e-3
 
-    def main(self, *, model_param: typing.Any = None, network_param: typing.Any = None, config: omegaconf.DictConfig | None = None) -> None:
+    def main(
+        self,
+        *,
+        model_param: typing.Any = None,
+        network_param: typing.Any = None,
+        config: omegaconf.DictConfig | None = None,
+    ) -> None:
         """
         The main function for the guided VMC optimization.
         """
@@ -110,11 +118,25 @@ class GuideConfig:
             if self.relative_count <= len(configs_src_network):
                 configs_dst_network = configs_src_network
             else:
-                configs_dst_network = torch.cat([configs_src_network, model.find_relative(configs_src_network, psi_src_network, self.relative_count - len(configs_src_network))])
+                configs_dst_network = torch.cat(
+                    [
+                        configs_src_network,
+                        model.find_relative(
+                            configs_src_network, psi_src_network, self.relative_count - len(configs_src_network)
+                        ),
+                    ]
+                )
             if self.relative_count <= len(configs_src_sampling):
                 configs_dst_sampling = configs_src_sampling
             else:
-                configs_dst_sampling = torch.cat([configs_src_sampling, model.find_relative(configs_src_sampling, psi_src_sampling, self.relative_count - len(configs_src_sampling))])
+                configs_dst_sampling = torch.cat(
+                    [
+                        configs_src_sampling,
+                        model.find_relative(
+                            configs_src_sampling, psi_src_sampling, self.relative_count - len(configs_src_sampling)
+                        ),
+                    ]
+                )
 
             optimizer_network = initialize_optimizer(
                 network.parameters(),
@@ -184,8 +206,13 @@ class GuideConfig:
                 optimizer_network.zero_grad()
                 sampling_energy: torch.Tensor = optimizer_network.step(energy_sampling)  # type: ignore[assignment,arg-type]
                 network_energy: torch.Tensor = energy_network()
-                logging.info("Local optimization in progress, step: %d, energy from sampling: %.10f, energy from network: %.10f, ref energy: %.10f", i, sampling_energy.item(), network_energy.item(),
-                             model.ref_energy)
+                logging.info(
+                    "Local optimization in progress, step: %d, energy from sampling: %.10f, energy from network: %.10f, ref energy: %.10f",
+                    i,
+                    sampling_energy.item(),
+                    network_energy.item(),
+                    model.ref_energy,
+                )
                 writer.add_scalar("guide/energy/sampling", sampling_energy, data["guide"]["local"])  # type: ignore[no-untyped-call]
                 writer.add_scalar("guide/error/sampling", sampling_energy - model.ref_energy, data["guide"]["local"])  # type: ignore[no-untyped-call]
                 writer.add_scalar("guide/energy/network", network_energy, data["guide"]["local"])  # type: ignore[no-untyped-call]

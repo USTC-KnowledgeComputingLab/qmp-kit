@@ -44,7 +44,9 @@ class _DynamicLanczos:
         count_core = len(self.configs)
         logging.info("Number of core configurations: %d", count_core)
 
-        self.configs = torch.cat([self.configs, self.model.find_relative(basic_configs, psi, self.count_extend, self.configs)])
+        self.configs = torch.cat(
+            [self.configs, self.model.find_relative(basic_configs, psi, self.count_extend, self.configs)]
+        )
         count_selected = len(self.configs)
         self.psi = torch.nn.functional.pad(self.psi, (0, count_selected - count_core))
         logging.info("Basis extended from %d to %d", count_core, count_selected)
@@ -76,7 +78,7 @@ class _DynamicLanczos:
             # Extend the configuration before all iterations.
             psi = self.psi
             for _ in range(self.step):
-                selected = (psi.conj() * psi).real.argsort(descending=True)[:self.count_extend]
+                selected = (psi.conj() * psi).real.argsort(descending=True)[: self.count_extend]
                 configs = self.configs
                 self._extend(psi[selected], self.configs[selected])
                 psi = self.model.apply_within(configs, psi, self.configs)  # pylint: disable=assignment-from-no-return
@@ -89,7 +91,11 @@ class _DynamicLanczos:
                 energy, psi = self._eigh_tridiagonal(alpha, beta, v)
                 yield energy, self.configs, psi
             # Extend based on all vector in v.
-            v_sum = functools.reduce(torch.add, ((vi.conj() * vi).real.cpu() for vi in v)).sqrt().to(device=self.configs.device)
+            v_sum = (
+                functools.reduce(torch.add, ((vi.conj() * vi).real.cpu() for vi in v))
+                .sqrt()
+                .to(device=self.configs.device)
+            )
             self._extend(v_sum)
             for _, [alpha, beta, v] in zip(range(1 + self.step), self._run()):
                 energy, psi = self._eigh_tridiagonal(alpha, beta, v)
@@ -177,13 +183,23 @@ class _DynamicLanczos:
         # We can only use 'stebz' or 'stemr' drivers in the current version of SciPy.
         # However, 'stemr' consumes a lot of memory, so we opt for 'stebz' here.
         # 'stebz' is efficient and only takes a few seconds even for large matrices with dimensions up to 10,000,000.
-        vals, vecs = scipy.linalg.eigh_tridiagonal(torch.stack(alpha, dim=0).cpu(), torch.stack(beta, dim=0).cpu(), lapack_driver="stebz", select="i", select_range=(0, 0))
+        vals, vecs = scipy.linalg.eigh_tridiagonal(
+            torch.stack(alpha, dim=0).cpu(),
+            torch.stack(beta, dim=0).cpu(),
+            lapack_driver="stebz",
+            select="i",
+            select_range=(0, 0),
+        )
         energy = torch.as_tensor(vals[0])
-        result = functools.reduce(torch.add, (weight[0] * vector.to(device=self.configs.device) for weight, vector in zip(vecs, v)))
+        result = functools.reduce(
+            torch.add, (weight[0] * vector.to(device=self.configs.device) for weight, vector in zip(vecs, v))
+        )
         return energy, result
 
 
-def _sampling_from_last_iteration(pool: tuple[torch.Tensor, torch.Tensor] | None, number: int) -> tuple[torch.Tensor, torch.Tensor] | tuple[None, None]:
+def _sampling_from_last_iteration(
+    pool: tuple[torch.Tensor, torch.Tensor] | None, number: int
+) -> tuple[torch.Tensor, torch.Tensor] | tuple[None, None]:
     """
     Sample configurations and wavefunction amplitudes from the last iteration.
 
@@ -242,7 +258,9 @@ def _merge_pool_from_neural_network_and_pool_from_last_iteration(
     psi_both = torch.cat([psi_a, psi_b])
     configs_result, indices = torch.unique(configs_both, return_inverse=True, dim=0)
     # If the configurations are not unique, we prefer the psi from the last iteration.
-    psi_result = torch.zeros(len(configs_result), device=psi_both.device, dtype=psi_both.dtype).scatter_(0, indices, psi_both)
+    psi_result = torch.zeros(len(configs_result), device=psi_both.device, dtype=psi_both.dtype).scatter_(
+        0, indices, psi_both
+    )
     return configs_result, psi_result
 
 
@@ -261,7 +279,9 @@ class HaarConfig:
     # The sampling count from last iteration
     sampling_count_from_last_iteration: typing.Annotated[int, tyro.conf.arg(aliases=["-f"])] = 1024
     # The extend count for the Krylov subspace
-    krylov_extend_count: typing.Annotated[int, tyro.conf.arg(aliases=["-c"], help_behavior_hint="default: 2048 if krylov_single_extend else 64")] = -1
+    krylov_extend_count: typing.Annotated[
+        int, tyro.conf.arg(aliases=["-c"], help_behavior_hint="default: 2048 if krylov_single_extend else 64")
+    ] = -1
     # Whether to extend Krylov subspace before all iterations
     krylov_extend_first: typing.Annotated[bool, tyro.conf.arg(aliases=["-z"])] = False
     # Whether to extend only once for Krylov subspace
@@ -277,9 +297,13 @@ class HaarConfig:
     # Whether to use LBFGS instead of Adam
     use_lbfgs: typing.Annotated[bool, tyro.conf.arg(aliases=["-2"])] = False
     # The learning rate for the local optimizer
-    learning_rate: typing.Annotated[float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")] = -1
+    learning_rate: typing.Annotated[
+        float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")
+    ] = -1
     # The number of steps for the local optimizer
-    local_step: typing.Annotated[int, tyro.conf.arg(aliases=["-s"], help_behavior_hint="(default: 10000 for Adam, 1000 for LBFGS)")] = -1
+    local_step: typing.Annotated[
+        int, tyro.conf.arg(aliases=["-s"], help_behavior_hint="(default: 10000 for Adam, 1000 for LBFGS)")
+    ] = -1
     # The early break loss threshold for local optimization
     local_loss: typing.Annotated[float, tyro.conf.arg(aliases=["-t"])] = 1e-8
     # The number of psi values to log after local optimization
@@ -370,9 +394,13 @@ class HaarConfig:
             logging.info("Starting a new optimization cycle")
 
             logging.info("Sampling configurations from neural network")
-            configs_from_neural_network, psi_from_neural_network, _, _ = network.generate_unique(self.sampling_count_from_neural_network, self.local_batch_count_generation)
+            configs_from_neural_network, psi_from_neural_network, _, _ = network.generate_unique(
+                self.sampling_count_from_neural_network, self.local_batch_count_generation
+            )
             logging.info("Sampling configurations from last iteration")
-            configs_from_last_iteration, psi_from_last_iteration = _sampling_from_last_iteration(data["haar"]["pool"], self.sampling_count_from_last_iteration)
+            configs_from_last_iteration, psi_from_last_iteration = _sampling_from_last_iteration(
+                data["haar"]["pool"], self.sampling_count_from_last_iteration
+            )
             logging.info("Merging configurations from neural network and last iteration")
             configs, original_psi = _merge_pool_from_neural_network_and_pool_from_last_iteration(
                 configs_from_neural_network,
@@ -385,23 +413,29 @@ class HaarConfig:
             logging.info("Computing the target for local optimization")
             target_energy: torch.Tensor
             for target_energy, configs, original_psi in _DynamicLanczos(
-                    model=model,
-                    configs=configs,
-                    psi=original_psi,
-                    step=self.krylov_iteration,
-                    threshold=self.krylov_threshold,
-                    count_extend=self.krylov_extend_count,
-                    batch_count_apply_within=self.local_batch_count_apply_within,
-                    single_extend=self.krylov_single_extend,
-                    first_extend=self.krylov_extend_first,
+                model=model,
+                configs=configs,
+                psi=original_psi,
+                step=self.krylov_iteration,
+                threshold=self.krylov_threshold,
+                count_extend=self.krylov_extend_count,
+                batch_count_apply_within=self.local_batch_count_apply_within,
+                single_extend=self.krylov_single_extend,
+                first_extend=self.krylov_extend_first,
             ).run():
-                logging.info("The current energy is %.10f where the sampling count is %d", target_energy.item(), len(configs))
+                logging.info(
+                    "The current energy is %.10f where the sampling count is %d", target_energy.item(), len(configs)
+                )
                 writer.add_scalar("haar/lanczos/energy", target_energy, data["haar"]["lanczos"])  # type: ignore[no-untyped-call]
                 writer.add_scalar("haar/lanczos/error", target_energy - model.ref_energy, data["haar"]["lanczos"])  # type: ignore[no-untyped-call]
                 data["haar"]["lanczos"] += 1
             max_index = original_psi.abs().argmax()
             target_psi = original_psi / original_psi[max_index]
-            logging.info("Local optimization target calculated, the target energy is %.10f, the sampling count is %d", target_energy.item(), len(configs))
+            logging.info(
+                "Local optimization target calculated, the target energy is %.10f, the sampling count is %d",
+                target_energy.item(),
+                len(configs),
+            )
 
             loss_func: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = getattr(losses, self.loss_name)
 
@@ -429,7 +463,9 @@ class HaarConfig:
                     end_index = start_index + current_batch_size
                     batch_indices = torch.arange(start_index, end_index, device=configs.device, dtype=torch.int64)
                     psi_batch = target_psi[batch_indices]
-                    batch_indices = torch.cat((batch_indices, torch.tensor([max_index], device=configs.device, dtype=torch.int64)))
+                    batch_indices = torch.cat(
+                        (batch_indices, torch.tensor([max_index], device=configs.device, dtype=torch.int64))
+                    )
                     batch_configs = configs[batch_indices]
                     psi = network(batch_configs)
                     psi_max = psi[-1]
@@ -474,7 +510,9 @@ class HaarConfig:
                 scale_learning_rate(optimizer, 1 << try_index)
                 if success:
                     if any(torch.isnan(param).any() or torch.isinf(param).any() for param in network.parameters()):
-                        logging.warning("NaN detected in parameters, restoring the previous state and exiting the optimization loop")
+                        logging.warning(
+                            "NaN detected in parameters, restoring the previous state and exiting the optimization loop"
+                        )
                         success = False
                 if success:
                     logging.info("Local optimization process completed")
@@ -504,10 +542,17 @@ class HaarConfig:
             logging.info("Displaying the largest amplitudes")
             indices = target_psi.abs().argsort(descending=True)
             text = []
-            for index in indices[:self.logging_psi]:
+            for index in indices[: self.logging_psi]:
                 this_config = model.show_config(configs[index])
-                logging.info("Configuration: %s, Target amplitude: %s, Final amplitude: %s", this_config, f"{target_psi[index].item():.8f}", f"{psi[index].item():.8f}")
-                text.append(f"Configuration: {this_config}, Target amplitude: {target_psi[index].item():.8f}, Final amplitude: {psi[index].item():.8f}")
+                logging.info(
+                    "Configuration: %s, Target amplitude: %s, Final amplitude: %s",
+                    this_config,
+                    f"{target_psi[index].item():.8f}",
+                    f"{psi[index].item():.8f}",
+                )
+                text.append(
+                    f"Configuration: {this_config}, Target amplitude: {target_psi[index].item():.8f}, Final amplitude: {psi[index].item():.8f}"
+                )
             writer.add_text("config", "\n".join(text), data["haar"]["global"])  # type: ignore[no-untyped-call]
             writer.flush()  # type: ignore[no-untyped-call]
 
