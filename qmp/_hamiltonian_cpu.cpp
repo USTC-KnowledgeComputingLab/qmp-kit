@@ -434,7 +434,7 @@ auto apply_within_conjugate_interface(
     TORCH_CHECK(coef.size(0) == term_number, "coef size must match the provided term_number.");
     TORCH_CHECK(coef.size(1) == 2, "coef must contain 2 elements for each term.");
 
-    auto result_sort_index = torch::arange(result_batch_size, torch::TensorOptions().dtype(torch::kInt64).device(device, device_id));
+    auto result_sort_index = torch::arange(result_batch_size, torch::TensorOptions().dtype(torch::kInt64).device(torch::kCPU, device_id));
 
     std::sort(
         reinterpret_cast<std::int64_t*>(result_sort_index.data_ptr()),
@@ -447,7 +447,7 @@ auto apply_within_conjugate_interface(
         }
     );
     auto sorted_result_configs = result_configs.index({result_sort_index});
-    auto sorted_result_psi = torch::zeros({result_batch_size, 2}, torch::TensorOptions().dtype(torch::kFloat64).device(device, device_id));
+    auto sorted_result_psi = torch::zeros({result_batch_size, 2}, torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU, device_id));
 
     apply_within_conjugate_kernel_interface<max_op_number, n_qubytes, particle_cut>(
         /*term_number=*/term_number,

@@ -461,8 +461,8 @@ auto apply_within_conjugate_interface(
     std::int64_t max_threads_per_block = prop.maxThreadsPerBlock;
 
     auto sorted_result_configs = result_configs.clone(torch::MemoryFormat::Contiguous);
-    auto result_sort_index = torch::arange(result_batch_size, torch::TensorOptions().dtype(torch::kInt64).device(device, device_id));
-    auto sorted_result_psi = torch::zeros({result_batch_size, 2}, torch::TensorOptions().dtype(torch::kFloat64).device(device, device_id));
+    auto result_sort_index = torch::arange(result_batch_size, torch::TensorOptions().dtype(torch::kInt64).device(torch::kCUDA, device_id));
+    auto sorted_result_psi = torch::zeros({result_batch_size, 2}, torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA, device_id));
 
     thrust::sort_by_key(
         policy,
