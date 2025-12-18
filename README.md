@@ -11,33 +11,9 @@ The package's main entry point is a command line interface (CLI) application, al
 
 ## Getting Started
 
-Users can run this application either using [Docker][docker-url] or locally.
-Both approaches require GPU(s) with [CUDA][cuda-url] support and a properly installed GPU driver, which is typically included with the installation of the CUDA Toolkit.
+To run this application locally, you need GPU(s) with [CUDA][cuda-url] support and a properly installed GPU driver (typically included with the CUDA Toolkit installation).
 
-### Run with Docker
-
-After installing [Docker][docker-url] with [CUDA support][docker-cuda-url], pull [our prebuilt Docker image][our-docker-url] using:
-```
-docker pull hzhangxyz/qmp
-```
-If users experience network issues, consider [configuring Docker mirrors][docker-mirror-url].
-
-Then, user can run `qmp` with
-```
-docker run --device=nvidia.com/gpu=all --rm -it hzhangxyz/qmp --help
-```
-
-This command utilizes Docker's [CDI][docker-cuda-cdi-url] feature to enable CUDA devices in `--device=nvidia.com/gpu=all`.
-Alternatively, for [legacy][docker-cuda-legacy-url] support, users can run:
-```
-docker run --gpus all --rm -it hzhangxyz/qmp --help
-```
-
-Please note that we currently provide Docker images for Linux/AMD64 only.
-
-When running with Docker, users might want to [mount][docker-mount-url] a local folder to share storage between the container and the local machine such as using the `-v` option.
-
-### Run locally
+### Local Installation
 
 To install locally, users first needs to install the [CUDA toolkit][cuda-url].
 
@@ -94,19 +70,12 @@ This project is distributed under the GPLv3 License. See [LICENSE.md](LICENSE.md
 
 [python-url]: https://www.python.org/
 [openfermion-url]: https://quantumai.google/openfermion
-[docker-url]: https://www.docker.com/
 [cuda-url]: https://docs.nvidia.com/cuda/
-[docker-cuda-url]: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html
-[our-docker-url]: https://hub.docker.com/r/hzhangxyz/qmp
-[docker-mirror-url]: https://docs.docker.com/docker-hub/image-library/mirror/
-[docker-cuda-cdi-url]: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/cdi-support.html
-[docker-cuda-legacy-url]: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 [anaconda-url]: https://www.anaconda.com/
 [miniconda-url]: https://docs.anaconda.com/miniconda/
 [venv-url]: https://docs.python.org/3/library/venv.html
 [pyenv-url]: https://github.com/pyenv/pyenv
 [our-pypi-url]: https://pypi.org/project/qmp/
-[docker-mount-url]: https://docs.docker.com/engine/storage/volumes/
 [pytorch-install-url]: https://pytorch.org/get-started/locally/
 [models-url]: https://huggingface.co/datasets/USTC-KnowledgeComputingLab/qmp-models
 [naqs-url]: https://github.com/tomdbar/naqs-for-quantum-chemistry

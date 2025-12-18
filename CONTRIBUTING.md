@@ -14,7 +14,6 @@ If you have any questions, please use the GitHub discussions.
 The code structure of qmp is following the standard Python package structure.
 We organize the package code into the folder named `qmp`, and the tests into the folder named `tests`.
 The file `pyproject.toml` is used to define the package metadata.
-The file `Dockerfile` is used to build the Docker image for the CLI application.
 There are also some other files such as `.clang-format`, `.pre-commit-config.yaml` used to format and lint the code.
 
 ## How to get involved
