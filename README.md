@@ -1,6 +1,6 @@
-# Hamiltonian-Guided Autoregressive Selected-Configuration Interaction(HAAR-SCI) Achieves Chemical Accuracy in Strongly Correlated Systems
+# Quantum Many-Body Problem Kit (qmp-kit)
 
-The current project temporarily named as Quantum-Many-Body (`qmp`) which is a powerful tool designed to solve quantum-many-body problems especially for strongly correlated systems.
+The quantum many-body problem kit (`qmp-kit`) is a powerful tool designed to solve quantum-many-body problems especially for strongly correlated systems. This project includes our work on [Hamiltonian-Guided Autoregressive Selected-Configuration Interaction Achieves Chemical Accuracy in Strongly Correlated Systems](https://pubs.acs.org/doi/10.1021/acs.jctc.5c01415).
 
 ## About The Project
 
