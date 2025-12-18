@@ -7,7 +7,6 @@ import logging
 import dataclasses
 import collections
 import torch
-import tyro
 from ..networks.mlp import WaveFunctionNormal as MlpWaveFunction
 from ..networks.attention import WaveFunctionNormal as AttentionWaveFunction
 from ..networks.peps import PepsFunction
@@ -24,43 +23,43 @@ class ModelConfig:
     # pylint: disable=too-many-instance-attributes
 
     # The width of the ising lattice
-    m: typing.Annotated[int, tyro.conf.Positional]
+    m: int
     # The height of the ising lattice
-    n: typing.Annotated[int, tyro.conf.Positional]
+    n: int
 
     # The coefficient of X
-    x: typing.Annotated[float, tyro.conf.arg(aliases=["-xe"])] = 0
+    x: float = 0
     # The coefficient of Y
-    y: typing.Annotated[float, tyro.conf.arg(aliases=["-ye"])] = 0
+    y: float = 0
     # The coefficient of Z
-    z: typing.Annotated[float, tyro.conf.arg(aliases=["-ze"])] = 0
+    z: float = 0
     # The coefficient of XX for horizontal bond
-    xh: typing.Annotated[float, tyro.conf.arg(aliases=["-xh"])] = 0
+    xh: float = 0
     # The coefficient of YY for horizontal bond
-    yh: typing.Annotated[float, tyro.conf.arg(aliases=["-yh"])] = 0
+    yh: float = 0
     # The coefficient of ZZ for horizontal bond
-    zh: typing.Annotated[float, tyro.conf.arg(aliases=["-zh"])] = 0
+    zh: float = 0
     # The coefficient of XX for vertical bond
-    xv: typing.Annotated[float, tyro.conf.arg(aliases=["-xv"])] = 0
+    xv: float = 0
     # The coefficient of YY for vertical bond
-    yv: typing.Annotated[float, tyro.conf.arg(aliases=["-yv"])] = 0
+    yv: float = 0
     # The coefficient of ZZ for vertical bond
-    zv: typing.Annotated[float, tyro.conf.arg(aliases=["-zv"])] = 0
+    zv: float = 0
     # The coefficient of XX for diagonal bond
-    xd: typing.Annotated[float, tyro.conf.arg(aliases=["-xd"])] = 0
+    xd: float = 0
     # The coefficient of YY for diagonal bond
-    yd: typing.Annotated[float, tyro.conf.arg(aliases=["-yd"])] = 0
+    yd: float = 0
     # The coefficient of ZZ for diagonal bond
-    zd: typing.Annotated[float, tyro.conf.arg(aliases=["-zd"])] = 0
+    zd: float = 0
     # The coefficient of XX for antidiagonal bond
-    xa: typing.Annotated[float, tyro.conf.arg(aliases=["-xa"])] = 0
+    xa: float = 0
     # The coefficient of YY for antidiagonal bond
-    ya: typing.Annotated[float, tyro.conf.arg(aliases=["-ya"])] = 0
+    ya: float = 0
     # The coefficient of ZZ for antidiagonal bond
-    za: typing.Annotated[float, tyro.conf.arg(aliases=["-za"])] = 0
+    za: float = 0
 
     # The ref energy of the model
-    ref_energy: typing.Annotated[float, tyro.conf.arg(aliases=["-r"])] = 0
+    ref_energy: float = 0
 
 
 class Model(ModelProto[ModelConfig]):
@@ -243,7 +242,7 @@ class MlpConfig:
     """
 
     # The hidden widths of the network
-    hidden: typing.Annotated[tuple[int, ...], tyro.conf.arg(aliases=["-w"])] = (512,)
+    hidden: tuple[int, ...] = (512,)
 
     def create(self, model: Model) -> NetworkProto:
         """
@@ -272,19 +271,19 @@ class AttentionConfig:
     """
 
     # Embedding dimension
-    embedding_dim: typing.Annotated[int, tyro.conf.arg(aliases=["-e"])] = 512
+    embedding_dim: int = 512
     # Heads number
-    heads_num: typing.Annotated[int, tyro.conf.arg(aliases=["-m"])] = 8
+    heads_num: int = 8
     # Feedforward dimension
-    feed_forward_dim: typing.Annotated[int, tyro.conf.arg(aliases=["-f"])] = 2048
+    feed_forward_dim: int = 2048
     # Shared expert number
-    shared_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-s"])] = 1
+    shared_expert_num: int = 1
     # Routed expert number
-    routed_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-r"])] = 0
+    routed_expert_num: int = 0
     # Selected expert number
-    selected_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 0
+    selected_expert_num: int = 0
     # Network depth
-    depth: typing.Annotated[int, tyro.conf.arg(aliases=["-d"])] = 6
+    depth: int = 6
 
     def create(self, model: Model) -> NetworkProto:
         """
@@ -335,9 +334,9 @@ class PepsConfig:
     """
 
     # The bond dimension of the network
-    D: typing.Annotated[int, tyro.conf.arg(aliases=["-d"])] = 4  # pylint: disable=invalid-name
+    D: int = 4  # pylint: disable=invalid-name
     # The cut-off bond dimension of the network
-    Dc: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 16  # pylint: disable=invalid-name
+    Dc: int = 16  # pylint: disable=invalid-name
 
     def create(self, model: Model) -> NetworkProto:
         """

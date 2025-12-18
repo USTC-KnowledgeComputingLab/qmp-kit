@@ -8,7 +8,6 @@ import dataclasses
 import omegaconf
 import torch
 import torch.utils.tensorboard
-import tyro
 from ..common import CommonConfig
 from ..subcommand_dict import subcommand_dict
 from ..optimizer import initialize_optimizer
@@ -23,22 +22,22 @@ class GuideConfig:
 
     # pylint: disable=too-many-instance-attributes
 
-    common: typing.Annotated[CommonConfig, tyro.conf.OmitArgPrefixes]
+    common: CommonConfig
 
     # The sampling count
-    sampling_count: typing.Annotated[int, tyro.conf.arg(aliases=["-n"])] = 4000
+    sampling_count: int = 4000
     # The number of relative configurations to be used in energy calculation
-    relative_count: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 40000
+    relative_count: int = 40000
     # Whether to use the global optimizer
-    global_opt: typing.Annotated[bool, tyro.conf.arg(aliases=["-g"])] = False
+    global_opt: bool = False
     # Whether to use LBFGS instead of Adam
-    use_lbfgs: typing.Annotated[bool, tyro.conf.arg(aliases=["-2"])] = False
+    use_lbfgs: bool = False
     # The learning rate for the local optimizer
-    learning_rate: typing.Annotated[float, tyro.conf.arg(aliases=["-r"], help_behavior_hint="(default: 1e-3 for Adam, 1 for LBFGS)")] = -1
+    learning_rate: float = -1
     # The number of steps for the local optimizer
-    local_step: typing.Annotated[int, tyro.conf.arg(aliases=["-s"])] = 1000
+    local_step: int = 1000
     # The number of steps for the distribution optimizer
-    dist_step: typing.Annotated[int, tyro.conf.arg(aliases=["-d"])] = 100
+    dist_step: int = 100
 
     def __post_init__(self) -> None:
         if self.learning_rate == -1:

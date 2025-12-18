@@ -5,7 +5,6 @@ This file implements the subspace chopping for the result of the imag script.
 import logging
 import typing
 import dataclasses
-import tyro
 import torch.utils.tensorboard
 from ..common import CommonConfig
 from ..subcommand_dict import subcommand_dict
@@ -17,12 +16,12 @@ class ChopImagConfig:
     The subspace chopping for the result of the imag script.
     """
 
-    common: typing.Annotated[CommonConfig, tyro.conf.OmitArgPrefixes]
+    common: CommonConfig
 
     # The number of configurations to eliminate every iteration
-    chop_size: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 10000
+    chop_size: int = 10000
     # The estimated magnitude of the second order term
-    second_order_magnitude: typing.Annotated[float, tyro.conf.arg(aliases=["-s"])] = 0.0
+    second_order_magnitude: float = 0.0
 
     def main(self, *, model_param: typing.Any = None, network_param: typing.Any = None) -> None:
         """

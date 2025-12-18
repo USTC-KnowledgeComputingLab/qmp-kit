@@ -8,7 +8,6 @@ import logging
 import dataclasses
 import pathlib
 import torch
-import tyro
 import openfermion
 from ..networks.mlp import WaveFunctionElectronUpDown as MlpWaveFunction
 from ..networks.attention import WaveFunctionElectronUpDown as AttentionWaveFunction
@@ -26,9 +25,9 @@ class ModelConfig:
     """
 
     # The openfermion model name
-    model_name: typing.Annotated[str, tyro.conf.Positional, tyro.conf.arg(metavar="MODEL")]
+    model_name: str
     # The path of models folder
-    model_path: typing.Annotated[pathlib.Path | None, tyro.conf.arg(aliases=["-M"], help_behavior_hint=f"default: \"models\", can be overridden by `${QMB_MODEL_PATH}'")] = None
+    model_path: pathlib.Path | None = None
 
     def __post_init__(self) -> None:
         if self.model_path is not None:
@@ -120,7 +119,7 @@ class MlpConfig:
     """
 
     # The hidden widths of the network
-    hidden: typing.Annotated[tuple[int, ...], tyro.conf.arg(aliases=["-w"])] = (512,)
+    hidden: tuple[int, ...] = (512,)
 
     def create(self, model: Model) -> NetworkProto:
         """
@@ -151,19 +150,19 @@ class AttentionConfig:
     """
 
     # Embedding dimension
-    embedding_dim: typing.Annotated[int, tyro.conf.arg(aliases=["-e"])] = 512
+    embedding_dim: int = 512
     # Heads number
-    heads_num: typing.Annotated[int, tyro.conf.arg(aliases=["-m"])] = 8
+    heads_num: int = 8
     # Feedforward dimension
-    feed_forward_dim: typing.Annotated[int, tyro.conf.arg(aliases=["-f"])] = 2048
+    feed_forward_dim: int = 2048
     # Shared expert number
-    shared_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-s"])] = 1
+    shared_expert_num: int = 1
     # Routed expert number
-    routed_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-r"])] = 0
+    routed_expert_num: int = 0
     # Selected expert number
-    selected_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 0
+    selected_expert_num: int = 0
     # Network depth
-    depth: typing.Annotated[int, tyro.conf.arg(aliases=["-d"])] = 6
+    depth: int = 6
 
     def create(self, model: Model) -> NetworkProto:
         """
@@ -216,19 +215,19 @@ class CrossMlpConfig:
     """
 
     # The hidden widths of the embedding subnetwork
-    embedding_hidden: typing.Annotated[tuple[int, ...], tyro.conf.arg(aliases=["-w"])] = (64,)
+    embedding_hidden: tuple[int, ...] = (64,)
     # The dimension of the embedding
-    embedding_size: typing.Annotated[int, tyro.conf.arg(aliases=["-e"])] = 16
+    embedding_size: int = 16
     # The hidden widths of the momentum subnetwork
-    momentum_hidden: typing.Annotated[tuple[int, ...], tyro.conf.arg(aliases=["-m"])] = (64,)
+    momentum_hidden: tuple[int, ...] = (64,)
     # The number of max momentum order
-    momentum_count: typing.Annotated[int, tyro.conf.arg(aliases=["-n"])] = 1
+    momentum_count: int = 1
     # The hidden widths of the tail part
-    tail_hidden: typing.Annotated[tuple[int, ...], tyro.conf.arg(aliases=["-t"])] = (64,)
+    tail_hidden: tuple[int, ...] = (64,)
     # The kind of the crossmlp forward function
-    kind: typing.Annotated[typing.Literal[0, 1, 2], tyro.conf.arg(aliases=["-k"])] = 0
+    kind: typing.Literal[0, 1, 2] = 0
     # The ordering of the sites
-    ordering: typing.Annotated[int | list[int], tyro.conf.arg(aliases=["-o"])] = +1
+    ordering: int | list[int] = +1
 
     def create(self, model: Model) -> NetworkProto:
         """

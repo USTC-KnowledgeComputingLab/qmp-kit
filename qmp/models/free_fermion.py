@@ -6,7 +6,6 @@ import typing
 import logging
 import dataclasses
 import torch
-import tyro
 from ..hamiltonian import Hamiltonian
 from ..model_dict import model_dict, ModelProto, NetworkConfigProto
 
@@ -18,12 +17,12 @@ class ModelConfig:
     """
 
     # The width of the free fermion lattice
-    m: typing.Annotated[int, tyro.conf.Positional]
+    m: int
     # The height of the free fermion lattice
-    n: typing.Annotated[int, tyro.conf.Positional]
+    n: int
 
     # The electron number
-    electron_number: typing.Annotated[int, tyro.conf.arg(aliases=["-e"])]
+    electron_number: int
 
     def __post_init__(self) -> None:
         if self.m <= 0 or self.n <= 0:

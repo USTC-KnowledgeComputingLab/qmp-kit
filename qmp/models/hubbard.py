@@ -6,7 +6,6 @@ import typing
 import logging
 import dataclasses
 import torch
-import tyro
 from ..networks.mlp import WaveFunctionElectronUpDown as MlpWaveFunction
 from ..networks.attention import WaveFunctionElectronUpDown as AttentionWaveFunction
 from ..hamiltonian import Hamiltonian
@@ -20,20 +19,20 @@ class ModelConfig:
     """
 
     # The width of the hubbard lattice
-    m: typing.Annotated[int, tyro.conf.Positional]
+    m: int
     # The height of the hubbard lattice
-    n: typing.Annotated[int, tyro.conf.Positional]
+    n: int
 
     # The coefficient of t
-    t: typing.Annotated[float, tyro.conf.arg(aliases=["-t"])] = 1
+    t: float = 1
     # The coefficient of U
-    u: typing.Annotated[float, tyro.conf.arg(aliases=["-u"])] = 0
+    u: float = 0
 
     # The electron number, left empty for half-filling
-    electron_number: typing.Annotated[int | None, tyro.conf.arg(aliases=["-e"])] = None
+    electron_number: int | None = None
 
     # The ref energy of the model
-    ref_energy: typing.Annotated[float, tyro.conf.arg(aliases=["-r"])] = 0
+    ref_energy: float = 0
 
     def __post_init__(self) -> None:
         if self.electron_number is None:
@@ -146,7 +145,7 @@ class MlpConfig:
     """
 
     # The hidden widths of the network
-    hidden: typing.Annotated[tuple[int, ...], tyro.conf.arg(aliases=["-w"])] = (512,)
+    hidden: tuple[int, ...] = (512,)
 
     def create(self, model: Model) -> NetworkProto:
         """
@@ -177,19 +176,19 @@ class AttentionConfig:
     """
 
     # Embedding dimension
-    embedding_dim: typing.Annotated[int, tyro.conf.arg(aliases=["-e"])] = 512
+    embedding_dim: int = 512
     # Heads number
-    heads_num: typing.Annotated[int, tyro.conf.arg(aliases=["-m"])] = 8
+    heads_num: int = 8
     # Feedforward dimension
-    feed_forward_dim: typing.Annotated[int, tyro.conf.arg(aliases=["-f"])] = 2048
+    feed_forward_dim: int = 2048
     # Shared expert number
-    shared_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-s"])] = 1
+    shared_expert_num: int = 1
     # Routed expert number
-    routed_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-r"])] = 0
+    routed_expert_num: int = 0
     # Selected expert number
-    selected_expert_num: typing.Annotated[int, tyro.conf.arg(aliases=["-c"])] = 0
+    selected_expert_num: int = 0
     # Network depth
-    depth: typing.Annotated[int, tyro.conf.arg(aliases=["-d"])] = 6
+    depth: int = 6
 
     def create(self, model: Model) -> NetworkProto:
         """

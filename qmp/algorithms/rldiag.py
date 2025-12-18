@@ -6,7 +6,6 @@ import logging
 import typing
 import dataclasses
 import functools
-import tyro
 import scipy
 import torch
 from ..common import CommonConfig
@@ -72,20 +71,20 @@ class RldiagConfig:
 
     # pylint: disable=too-many-instance-attributes
 
-    common: typing.Annotated[CommonConfig, tyro.conf.OmitArgPrefixes]
+    common: CommonConfig
 
     # The initial configuration for the first step, which is usually the Hatree-Fock state for quantum chemistry system
-    initial_config: typing.Annotated[typing.Optional[str], tyro.conf.arg(aliases=["-i"])] = None
+    initial_config: typing.Optional[str] = None
     # The maximum size of the configuration pool
-    max_pool_size: typing.Annotated[int, tyro.conf.arg(aliases=["-n"])] = 32768
+    max_pool_size: int = 32768
     # The learning rate for the local optimizer
-    learning_rate: typing.Annotated[float, tyro.conf.arg(aliases=["-r"])] = 1e-3
+    learning_rate: float = 1e-3
     # The step of lanczos iteration for calculating the energy
-    lanczos_step: typing.Annotated[int, tyro.conf.arg(aliases=["-k"])] = 64
+    lanczos_step: int = 64
     # The thereshold for the lanczos iteration
-    lanczos_threshold: typing.Annotated[float, tyro.conf.arg(aliases=["-d"])] = 1e-8
+    lanczos_threshold: float = 1e-8
     # The coefficient of configuration number for the sigma calculation
-    alpha: typing.Annotated[float, tyro.conf.arg(aliases=["-a"])] = 0.0
+    alpha: float = 0.0
 
     def main(self, *, model_param: typing.Any = None, network_param: typing.Any = None) -> None:
         """

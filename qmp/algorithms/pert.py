@@ -5,7 +5,6 @@ This file implements a perturbation estimator from haar.
 import logging
 import typing
 import dataclasses
-import tyro
 from ..common import CommonConfig
 from ..subcommand_dict import subcommand_dict
 
@@ -16,7 +15,7 @@ class PerturbationConfig:
     The perturbation estimator from haar.
     """
 
-    common: typing.Annotated[CommonConfig, tyro.conf.OmitArgPrefixes]
+    common: CommonConfig
 
     def main(self, *, model_param: typing.Any = None, network_param: typing.Any = None) -> None:
         """
