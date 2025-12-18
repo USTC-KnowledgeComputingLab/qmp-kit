@@ -7,9 +7,9 @@ This is the main entry point for the command line application.
 import pathlib
 import hydra
 import omegaconf
-from .subcommand_dict import subcommand_dict
-from .common import CommonConfig
-from .model_dict import model_dict
+from .utility.subcommand_dict import subcommand_dict
+from .utility.common import CommonConfig
+from .utility.model_dict import model_dict
 from .models import openfermion as _  # type: ignore[no-redef]
 from .models import fcidump as _  # type: ignore[no-redef]
 from .models import hubbard as _  # type: ignore[no-redef]

@@ -6,7 +6,7 @@ import logging
 import dataclasses
 import torch
 from ..hamiltonian import Hamiltonian
-from ..model_dict import model_dict, ModelProto, NetworkConfigProto
+from ..utility.model_dict import model_dict, ModelProto, NetworkConfigProto
 
 
 @dataclasses.dataclass

@@ -8,7 +8,7 @@ import torch
 from ..networks.mlp import WaveFunctionElectronUpDown as MlpWaveFunction
 from ..networks.attention import WaveFunctionElectronUpDown as AttentionWaveFunction
 from ..hamiltonian import Hamiltonian
-from ..model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
+from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
 @dataclasses.dataclass

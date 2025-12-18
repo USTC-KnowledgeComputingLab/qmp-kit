@@ -54,7 +54,7 @@ qmp-kit = "qmp.__main__:main"
 include = ["qmp"]
 
 [tool.setuptools.package-data]
-qmp = ["*.cpp", "*.cu"]
+qmp = ["hamiltonian/*.cpp", "hamiltonian/*.cu"]
 
 [tool.setuptools_scm]
 version_file = "qmp/_version.py"

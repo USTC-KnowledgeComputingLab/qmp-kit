@@ -5,7 +5,7 @@ This file implements a cross MLP network.
 import itertools
 import typing
 import torch
-from ..bitspack import unpack_int
+from ..utility.bitspack import unpack_int
 
 
 class FakeLinear(torch.nn.Module):
