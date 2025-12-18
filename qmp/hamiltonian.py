@@ -41,9 +41,9 @@ class Hamiltonian:
             cls._load_module("declaration", n_qubytes, particle_cut)  # Ensure the declaration module is loaded first
         key = (device_type, n_qubytes, particle_cut)
         is_prepare = key == ("declaration", 0, 0)
-        name = "qmb_hamiltonian" if is_prepare else f"qmb_hamiltonian_{n_qubytes}_{particle_cut}"
+        name = "qmp_hamiltonian" if is_prepare else f"qmp_hamiltonian_{n_qubytes}_{particle_cut}"
         if key not in cls._hamiltonian_module:
-            build_directory = platformdirs.user_cache_path("qmb", "kclab") / name / device_type
+            build_directory = platformdirs.user_cache_path("qmp", "kclab") / name / device_type
             build_directory.mkdir(parents=True, exist_ok=True)
             folder = os.path.dirname(__file__)
             match device_type:

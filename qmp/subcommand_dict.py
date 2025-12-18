@@ -3,7 +3,7 @@ This module is used to store a dictionary that maps subcommand names to their co
 
 Other packages or subpackages can register their subcommands by adding entries to this dictionary, such as
 ```
-from qmb.subcommand_dict import subcommand_dict
+from qmp.subcommand_dict import subcommand_dict
 subcommand_dict["my_subcommand"] = MySubcommand
 ```
 """

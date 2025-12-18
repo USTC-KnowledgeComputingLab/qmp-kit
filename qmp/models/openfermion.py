@@ -15,7 +15,7 @@ from ..networks.crossmlp import WaveFunction as CrossMlpWaveFunction
 from ..hamiltonian import Hamiltonian
 from ..model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
-QMB_MODEL_PATH = "QMB_MODEL_PATH"
+QMP_MODEL_PATH = "QMP_MODEL_PATH"
 
 
 @dataclasses.dataclass
@@ -33,8 +33,8 @@ class ModelConfig:
         if self.model_path is not None:
             self.model_path = pathlib.Path(self.model_path)
         else:
-            if QMB_MODEL_PATH in os.environ:
-                self.model_path = pathlib.Path(os.environ[QMB_MODEL_PATH])
+            if QMP_MODEL_PATH in os.environ:
+                self.model_path = pathlib.Path(os.environ[QMP_MODEL_PATH])
             else:
                 self.model_path = pathlib.Path("models")
 

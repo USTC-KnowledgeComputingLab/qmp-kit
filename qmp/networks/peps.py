@@ -105,7 +105,7 @@ class PEPS(torch.nn.Module):
 
 class PepsFunction(torch.nn.Module):
     """
-    The PEPS tensor network used by qmb interface.
+    The PEPS tensor network used by qmp interface.
     """
 
     def __init__(self, L1: int, L2: int, d: int, D: int, Dc: int, use_complex: bool = False) -> None:  # pylint: disable=too-many-arguments, too-many-positional-arguments
