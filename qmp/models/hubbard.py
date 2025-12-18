@@ -42,7 +42,9 @@ class ModelConfig:
             raise ValueError("The dimensions of the Hubbard model must be positive integers.")
 
         if self.electron_number < 0 or self.electron_number > 2 * self.m * self.n:
-            raise ValueError(f"The electron number {self.electron_number} is out of bounds for a {self.m}x{self.n} lattice. Each site can host up to two electrons (spin up and spin down).")
+            raise ValueError(
+                f"The electron number {self.electron_number} is out of bounds for a {self.m}x{self.n} lattice. Each site can host up to two electrons (spin up and spin down)."
+            )
 
 
 class Model(ModelProto[ModelConfig]):
@@ -60,7 +62,6 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def _prepare_hamiltonian(cls, args: ModelConfig) -> dict[tuple[tuple[int, int], ...], complex]:
-
         def _index(i: int, j: int, o: int) -> int:
             return (i + j * args.m) * 2 + o
 
@@ -68,7 +69,9 @@ class Model(ModelProto[ModelConfig]):
         for i in range(args.m):
             for j in range(args.n):
                 # On-site interaction
-                hamiltonian_dict[(_index(i, j, 0), 1), (_index(i, j, 0), 0), (_index(i, j, 1), 1), (_index(i, j, 1), 0)] = args.u
+                hamiltonian_dict[
+                    (_index(i, j, 0), 1), (_index(i, j, 0), 0), (_index(i, j, 1), 1), (_index(i, j, 1), 0)
+                ] = args.u
 
                 # Nearest neighbor hopping
                 if i != 0:
@@ -92,7 +95,9 @@ class Model(ModelProto[ModelConfig]):
         self.n: int = args.n
         self.electron_number: int = args.electron_number
         logging.info("Constructing Hubbard model with dimensions: width = %d, height = %d", self.m, self.n)
-        logging.info("The parameters of the model are: t = %.10f, U = %.10f, N = %d", args.t, args.u, args.electron_number)
+        logging.info(
+            "The parameters of the model are: t = %.10f, U = %.10f, N = %d", args.t, args.u, args.electron_number
+        )
 
         logging.info("Initializing Hamiltonian for the lattice")
         hamiltonian_dict: dict[tuple[tuple[int, int], ...], complex] = self._prepare_hamiltonian(args)
@@ -108,7 +113,13 @@ class Model(ModelProto[ModelConfig]):
     def apply_within(self, configs_i: torch.Tensor, psi_i: torch.Tensor, configs_j: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.apply_within(configs_i, psi_i, configs_j)
 
-    def find_relative(self, configs_i: torch.Tensor, psi_i: torch.Tensor, count_selected: int, configs_exclude: torch.Tensor | None = None) -> torch.Tensor:
+    def find_relative(
+        self,
+        configs_i: torch.Tensor,
+        psi_i: torch.Tensor,
+        count_selected: int,
+        configs_exclude: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         return self.hamiltonian.find_relative(configs_i, psi_i, count_selected, configs_exclude)
 
     def diagonal_term(self, configs: torch.Tensor) -> torch.Tensor:
@@ -119,7 +130,17 @@ class Model(ModelProto[ModelConfig]):
 
     def show_config(self, config: torch.Tensor) -> str:
         string = "".join(f"{i:08b}"[::-1] for i in config.cpu().numpy())
-        return "[" + ".".join("".join(self._show_config_site(string[(i + j * self.m) * 2:(i + j * self.m) * 2 + 2]) for i in range(self.m)) for j in range(self.n)) + "]"
+        return (
+            "["
+            + ".".join(
+                "".join(
+                    self._show_config_site(string[(i + j * self.m) * 2 : (i + j * self.m) * 2 + 2])
+                    for i in range(self.m)
+                )
+                for j in range(self.n)
+            )
+            + "]"
+        )
 
     def _show_config_site(self, string: str) -> str:
         match string:

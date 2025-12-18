@@ -218,7 +218,13 @@ class Model(ModelProto[ModelConfig]):
     def apply_within(self, configs_i: torch.Tensor, psi_i: torch.Tensor, configs_j: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.apply_within(configs_i, psi_i, configs_j)
 
-    def find_relative(self, configs_i: torch.Tensor, psi_i: torch.Tensor, count_selected: int, configs_exclude: torch.Tensor | None = None) -> torch.Tensor:
+    def find_relative(
+        self,
+        configs_i: torch.Tensor,
+        psi_i: torch.Tensor,
+        count_selected: int,
+        configs_exclude: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         return self.hamiltonian.find_relative(configs_i, psi_i, count_selected, configs_exclude)
 
     def diagonal_term(self, configs: torch.Tensor) -> torch.Tensor:
@@ -229,7 +235,13 @@ class Model(ModelProto[ModelConfig]):
 
     def show_config(self, config: torch.Tensor) -> str:
         string = "".join(f"{i:08b}"[::-1] for i in config.cpu().numpy())
-        return "[" + ".".join("".join("↑" if string[i + j * self.m] == "0" else "↓" for i in range(self.m)) for j in range(self.n)) + "]"
+        return (
+            "["
+            + ".".join(
+                "".join("↑" if string[i + j * self.m] == "0" else "↓" for i in range(self.m)) for j in range(self.n)
+            )
+            + "]"
+        )
 
 
 model_dict["ising"] = Model
@@ -343,9 +355,7 @@ class PepsConfig:
         Create a PEPS network for the model.
         """
         logging.info(
-            "PEPS network configuration: "
-            "bond dimension: %d, "
-            "cut-off bond dimension: %d",
+            "PEPS network configuration: bond dimension: %d, cut-off bond dimension: %d",
             self.D,
             self.Dc,
         )

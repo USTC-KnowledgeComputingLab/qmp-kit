@@ -79,7 +79,11 @@ def unpack_int(tensor: torch.Tensor, size: int, last_dim: int) -> torch.Tensor:
     assert size in [1, 2, 4, 8]
 
     # Define the weights tensor and shifts tensor
-    weights = torch.tensor([1 << i for i in range(8)], device=tensor.device, dtype=torch.uint8).view([8 // size, size]).sum(dim=-1, dtype=torch.uint8)
+    weights = (
+        torch.tensor([1 << i for i in range(8)], device=tensor.device, dtype=torch.uint8)
+        .view([8 // size, size])
+        .sum(dim=-1, dtype=torch.uint8)
+    )
     shifts = torch.tensor(list(range(0, 8, size)), device=tensor.device, dtype=torch.uint8)
 
     # Calculate the unpacked values

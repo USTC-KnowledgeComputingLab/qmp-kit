@@ -46,9 +46,15 @@ class ModelConfig:
                 self.model_path = pathlib.Path("models")
 
 
-def _read_fcidump(file_name: pathlib.Path, *, cached: bool = False) -> tuple[tuple[int, int, int], dict[tuple[tuple[int, int], ...], complex]]:
+def _read_fcidump(
+    file_name: pathlib.Path, *, cached: bool = False
+) -> tuple[tuple[int, int, int], dict[tuple[tuple[int, int], ...], complex]]:
     # pylint: disable=too-many-locals
-    with gzip.open(file_name, "rt", encoding="utf-8") if file_name.name.endswith(".gz") else open(file_name, "rt", encoding="utf-8") as file:
+    with (
+        gzip.open(file_name, "rt", encoding="utf-8")
+        if file_name.name.endswith(".gz")
+        else open(file_name, "rt", encoding="utf-8") as file
+    ):
         n_orbit: int | None = None
         n_electron: int | None = None
         n_spin: int | None = None
@@ -108,9 +114,13 @@ def _read_fcidump(file_name: pathlib.Path, *, cached: bool = False) -> tuple[tup
     energy_2_b[1::2, 0::2, 0::2, 1::2] = energy_2
     energy_2_b[1::2, 1::2, 1::2, 1::2] = energy_2
 
-    interaction_operator: openfermion.InteractionOperator = openfermion.InteractionOperator(energy_0, energy_1_b.numpy(), energy_2_b.numpy())  # type: ignore[no-untyped-call]
+    interaction_operator: openfermion.InteractionOperator = openfermion.InteractionOperator(
+        energy_0, energy_1_b.numpy(), energy_2_b.numpy()
+    )  # type: ignore[no-untyped-call]
     fermion_operator: openfermion.FermionOperator = openfermion.get_fermion_operator(interaction_operator)  # type: ignore[no-untyped-call]
-    return (n_orbit, n_electron, n_spin), {k: complex(v) for k, v in openfermion.normal_ordered(fermion_operator).terms.items()}  # type: ignore[no-untyped-call]
+    return (n_orbit, n_electron, n_spin), {
+        k: complex(v) for k, v in openfermion.normal_ordered(fermion_operator).terms.items()
+    }  # type: ignore[no-untyped-call]
 
 
 class Model(ModelProto[ModelConfig]):
@@ -170,7 +180,13 @@ class Model(ModelProto[ModelConfig]):
         self.n_qubit: int = n_orbit * 2
         self.n_electron: int = n_electron
         self.n_spin: int = n_spin
-        logging.info("Identified %d qubits, %d electrons and %d spin for model '%s'", self.n_qubit, self.n_electron, self.n_spin, model_name)
+        logging.info(
+            "Identified %d qubits, %d electrons and %d spin for model '%s'",
+            self.n_qubit,
+            self.n_electron,
+            self.n_spin,
+            model_name,
+        )
 
         self.ref_energy: float
         if ref_energy is not None:
@@ -188,7 +204,13 @@ class Model(ModelProto[ModelConfig]):
     def apply_within(self, configs_i: torch.Tensor, psi_i: torch.Tensor, configs_j: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.apply_within(configs_i, psi_i, configs_j)
 
-    def find_relative(self, configs_i: torch.Tensor, psi_i: torch.Tensor, count_selected: int, configs_exclude: torch.Tensor | None = None) -> torch.Tensor:
+    def find_relative(
+        self,
+        configs_i: torch.Tensor,
+        psi_i: torch.Tensor,
+        count_selected: int,
+        configs_exclude: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         return self.hamiltonian.find_relative(configs_i, psi_i, count_selected, configs_exclude)
 
     def diagonal_term(self, configs: torch.Tensor) -> torch.Tensor:
@@ -199,7 +221,11 @@ class Model(ModelProto[ModelConfig]):
 
     def show_config(self, config: torch.Tensor) -> str:
         string = "".join(f"{i:08b}"[::-1] for i in config.cpu().numpy())
-        return "[" + "".join(self._show_config_site(string[index:index + 2]) for index in range(0, self.n_qubit, 2)) + "]"
+        return (
+            "["
+            + "".join(self._show_config_site(string[index : index + 2]) for index in range(0, self.n_qubit, 2))
+            + "]"
+        )
 
     def _show_config_site(self, string: str) -> str:
         match string:

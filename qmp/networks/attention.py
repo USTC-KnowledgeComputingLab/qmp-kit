@@ -92,14 +92,14 @@ class DecoderUnit(torch.nn.Module):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            *,
-            embedding_dim: int,
-            heads_num: int,
-            feed_forward_dim: int,
-            shared_num: int,
-            routed_num: int,
-            selected_num: int,
+        self,
+        *,
+        embedding_dim: int,
+        heads_num: int,
+        feed_forward_dim: int,
+        shared_num: int,
+        routed_num: int,
+        selected_num: int,
     ) -> None:
         super().__init__()
         self.shared_num = shared_num
@@ -108,8 +108,12 @@ class DecoderUnit(torch.nn.Module):
 
         self.attention: torch.nn.Module = SelfAttention(embedding_dim, heads_num)
         self.norm1: torch.nn.Module = torch.nn.LayerNorm(embedding_dim)
-        self.feed_forward_shared: torch.nn.ModuleList = torch.nn.ModuleList([FeedForward(embedding_dim, feed_forward_dim) for _ in range(shared_num)])
-        self.feed_forward_routed: torch.nn.ModuleList = torch.nn.ModuleList([FeedForward(embedding_dim, feed_forward_dim) for _ in range(routed_num)])
+        self.feed_forward_shared: torch.nn.ModuleList = torch.nn.ModuleList(
+            [FeedForward(embedding_dim, feed_forward_dim) for _ in range(shared_num)]
+        )
+        self.feed_forward_routed: torch.nn.ModuleList = torch.nn.ModuleList(
+            [FeedForward(embedding_dim, feed_forward_dim) for _ in range(routed_num)]
+        )
         self.centroid: torch.nn.Parameter = torch.nn.Parameter(torch.randn(routed_num, embedding_dim))
         self.norm2: torch.nn.Module = torch.nn.LayerNorm(embedding_dim)
 
@@ -161,15 +165,15 @@ class Transformers(torch.nn.Module):
     """
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            *,
-            embedding_dim: int,
-            heads_num: int,
-            feed_forward_dim: int,
-            shared_num: int,
-            routed_num: int,
-            selected_num: int,
-            depth: int,
+        self,
+        *,
+        embedding_dim: int,
+        heads_num: int,
+        feed_forward_dim: int,
+        shared_num: int,
+        routed_num: int,
+        selected_num: int,
+        depth: int,
     ) -> None:
         super().__init__()
         self.layers: torch.nn.ModuleList = torch.nn.ModuleList(
@@ -180,7 +184,9 @@ class Transformers(torch.nn.Module):
                 shared_num=shared_num,
                 routed_num=routed_num,
                 selected_num=selected_num,
-            ) for _ in range(depth))
+            )
+            for _ in range(depth)
+        )
 
     def forward(
         self,
@@ -247,7 +253,7 @@ class Embedding(torch.nn.Module):
         x = x.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, -1, self.embedding_dim)
         # x: batch * sites * config=1 * embedding
 
-        parameter = self.parameter[base:base + sites].unsqueeze(0).expand(batch, -1, -1, -1)
+        parameter = self.parameter[base : base + sites].unsqueeze(0).expand(batch, -1, -1, -1)
         # parameter: batch * sites * config * embedding
 
         result = torch.gather(parameter, -2, x.to(dtype=torch.int64))
@@ -265,21 +271,22 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            *,
-            double_sites: int,  # Number of qubits, where each pair of qubits represents a site
-            physical_dim: int,  # Dimension of the physical space, which is always 2
-            is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true
-            spin_up: int,  # Number of spin-up electrons
-            spin_down: int,  # Number of spin-down electrons
-            embedding_dim: int,  # Dimension of the embedding space used in the transformer layers
-            heads_num: int,  # Number of attention heads in the transformer's self-attention mechanism
-            feed_forward_dim: int,  # Dimension of the feed-forward network within the transformer layers
-            shared_num: int,  # Number of the shared expert in the DeepSeekMoE architecture
-            routed_num: int,  # Number of the routed expert in the DeepSeekMoE architecture
-            selected_num: int,  # Number of the selected expert in the DeepSeekMoE architecture
-            depth: int,  # Number of decoder layers in the transformer model
-            ordering: int | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
+        self,
+        *,
+        double_sites: int,  # Number of qubits, where each pair of qubits represents a site
+        physical_dim: int,  # Dimension of the physical space, which is always 2
+        is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true
+        spin_up: int,  # Number of spin-up electrons
+        spin_down: int,  # Number of spin-down electrons
+        embedding_dim: int,  # Dimension of the embedding space used in the transformer layers
+        heads_num: int,  # Number of attention heads in the transformer's self-attention mechanism
+        feed_forward_dim: int,  # Dimension of the feed-forward network within the transformer layers
+        shared_num: int,  # Number of the shared expert in the DeepSeekMoE architecture
+        routed_num: int,  # Number of the routed expert in the DeepSeekMoE architecture
+        selected_num: int,  # Number of the selected expert in the DeepSeekMoE architecture
+        depth: int,  # Number of decoder layers in the transformer model
+        ordering: int
+        | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
     ) -> None:
         super().__init__()
         assert double_sites % 2 == 0
@@ -322,7 +329,15 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
         self.ordering: torch.Tensor
         self.register_buffer("ordering", torch.tensor(ordering, dtype=torch.int64))
         self.ordering_reversed: torch.Tensor
-        self.register_buffer("ordering_reversed", torch.scatter(torch.zeros(self.sites, dtype=torch.int64), 0, self.ordering, torch.arange(self.sites, dtype=torch.int64)))
+        self.register_buffer(
+            "ordering_reversed",
+            torch.scatter(
+                torch.zeros(self.sites, dtype=torch.int64),
+                0,
+                self.ordering,
+                torch.arange(self.sites, dtype=torch.int64),
+            ),
+        )
 
         # Dummy Parameter for Device and Dtype Retrieval
         # This parameter is used to infer the device and dtype of the model.
@@ -419,7 +434,9 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
         phase: torch.Tensor = tail[:, :, 4:].view(batch_size, self.sites, 2, 2)
 
         # Apply a filter mask to the amplitude to ensure the conservation of particle number.
-        amplitude = amplitude + torch.stack([torch.where(self._mask(x[:, :i]), 0, -torch.inf) for i in range(self.sites)], dim=1)
+        amplitude = amplitude + torch.stack(
+            [torch.where(self._mask(x[:, :i]), 0, -torch.inf) for i in range(self.sites)], dim=1
+        )
 
         # Normalize the delta amplitude.
         amplitude = self._normalize_amplitude(amplitude)
@@ -433,7 +450,9 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
         selected_amplitude: torch.Tensor = amplitude[batch_indices, sites_indices, x_int32[:, :, 0], x_int32[:, :, 1]]
         selected_phase: torch.Tensor = phase[batch_indices, sites_indices, x_int32[:, :, 0], x_int32[:, :, 1]]
 
-        return torch.view_as_complex(torch.stack([selected_amplitude.double().sum(dim=1), selected_phase.double().sum(dim=1)], dim=-1)).exp()
+        return torch.view_as_complex(
+            torch.stack([selected_amplitude.double().sum(dim=1), selected_phase.double().sum(dim=1)], dim=-1)
+        ).exp()
 
     @torch.jit.export
     def _blocked_forward_for_generate_unique(  # pylint: disable=too-many-arguments
@@ -466,14 +485,21 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
             if cache_input is None:
                 post_transformers_block, cache_block = self.transformers(emb_block, None, None)
             else:
-                cache_block_input = [(cache_layer[0][batch_indices_block], cache_layer[1][batch_indices_block]) for cache_layer in cache_input]
+                cache_block_input = [
+                    (cache_layer[0][batch_indices_block], cache_layer[1][batch_indices_block])
+                    for cache_layer in cache_input
+                ]
                 post_transformers_block, cache_block = self.transformers(emb_block, cache_block_input, None)
             tail_block: torch.Tensor = self.tail(post_transformers_block)
             tail_list.append(tail_block)
             cache_list.append(cache_block)
         tail: torch.Tensor = torch.cat(tail_list)
         cache: list[tuple[torch.Tensor, torch.Tensor]] = [
-            (torch.cat([cache_block[depth][0] for cache_block in cache_list]), torch.cat([cache_block[depth][1] for cache_block in cache_list])) for depth in range(self.depth)
+            (
+                torch.cat([cache_block[depth][0] for cache_block in cache_list]),
+                torch.cat([cache_block[depth][1] for cache_block in cache_list]),
+            )
+            for depth in range(self.depth)
         ]
         return tail, cache
 
@@ -510,7 +536,9 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
             # post_transformers, cache = self.transformers(emb, cache, None)
             # # tail: batch * (sites=1) * 8
             # tail: torch.Tensor = self.tail(post_transformers)
-            tail, cache = self._blocked_forward_for_generate_unique(x=x, cache_input=cache, block_num=block_num, device=device, i=i)
+            tail, cache = self._blocked_forward_for_generate_unique(
+                x=x, cache_input=cache, block_num=block_num, device=device, i=i
+            )
 
             # The first 4 item are amplitude
             # delta_amplitude: batch * 2 * 2
@@ -532,23 +560,38 @@ class WaveFunctionElectronUpDown(torch.nn.Module):
             # Get max perturbed prob
             Z: torch.Tensor = L.max(dim=-1).values.view([local_batch_size, 1])
             # Evaluate the conditioned prob
-            tildeL: torch.Tensor = -torch.log(torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L))
+            tildeL: torch.Tensor = -torch.log(
+                torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L)
+            )
 
             assert cache is not None
 
             # Calculate appended configurations for 4 adds
             # local_batch_size * current_site * 2 + local_batch_size * 1 * 2
-            x0: torch.Tensor = torch.cat([x, torch.tensor([[0, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
-            x1: torch.Tensor = torch.cat([x, torch.tensor([[0, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
-            x2: torch.Tensor = torch.cat([x, torch.tensor([[1, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
-            x3: torch.Tensor = torch.cat([x, torch.tensor([[1, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1)
+            x0: torch.Tensor = torch.cat(
+                [x, torch.tensor([[0, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
+            x1: torch.Tensor = torch.cat(
+                [x, torch.tensor([[0, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
+            x2: torch.Tensor = torch.cat(
+                [x, torch.tensor([[1, 0]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
+            x3: torch.Tensor = torch.cat(
+                [x, torch.tensor([[1, 1]], device=device, dtype=torch.uint8).expand(local_batch_size, -1, -1)], dim=1
+            )
 
             # Cat all configurations to get x : new_local_batch_size * (current_size+1) * 2
             # (un)perturbed prob : new_local_batch_size
             x = torch.cat([x0, x1, x2, x3])
             unperturbed_probability = l.permute(1, 0).reshape([4 * local_batch_size])
             perturbed_probability = tildeL.permute(1, 0).reshape([4 * local_batch_size])
-            cache_indices = torch.arange(local_batch_size, device=device, dtype=torch.int64).unsqueeze(0).expand(4, -1).reshape([4 * local_batch_size])
+            cache_indices = (
+                torch.arange(local_batch_size, device=device, dtype=torch.int64)
+                .unsqueeze(0)
+                .expand(4, -1)
+                .reshape([4 * local_batch_size])
+            )
             # kv cache: batch * heads_num * site * heads_dim, so just repeat first dimension
 
             # Filter results, only use largest batch_size ones
@@ -604,19 +647,20 @@ class WaveFunctionNormal(torch.nn.Module):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            *,
-            sites: int,  # Number of qubits
-            physical_dim: int,  # Dimension of the physical space,
-            is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true
-            embedding_dim: int,  # Dimension of the embedding space used in the transformer layers
-            heads_num: int,  # Number of attention heads in the transformer's self-attention mechanism
-            feed_forward_dim: int,  # Dimension of the feed-forward network within the transformer layers
-            shared_num: int,  # Number of the shared expert in the DeepSeekMoE architecture
-            routed_num: int,  # Number of the routed expert in the DeepSeekMoE architecture
-            selected_num: int,  # Number of the selected expert in the DeepSeekMoE architecture
-            depth: int,  # Number of decoder layers in the transformer model
-            ordering: int | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
+        self,
+        *,
+        sites: int,  # Number of qubits
+        physical_dim: int,  # Dimension of the physical space,
+        is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true
+        embedding_dim: int,  # Dimension of the embedding space used in the transformer layers
+        heads_num: int,  # Number of attention heads in the transformer's self-attention mechanism
+        feed_forward_dim: int,  # Dimension of the feed-forward network within the transformer layers
+        shared_num: int,  # Number of the shared expert in the DeepSeekMoE architecture
+        routed_num: int,  # Number of the routed expert in the DeepSeekMoE architecture
+        selected_num: int,  # Number of the selected expert in the DeepSeekMoE architecture
+        depth: int,  # Number of decoder layers in the transformer model
+        ordering: int
+        | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
     ) -> None:
         super().__init__()
         self.sites: int = sites
@@ -655,7 +699,15 @@ class WaveFunctionNormal(torch.nn.Module):
         self.ordering: torch.Tensor
         self.register_buffer("ordering", torch.tensor(ordering, dtype=torch.int64))
         self.ordering_reversed: torch.Tensor
-        self.register_buffer("ordering_reversed", torch.scatter(torch.zeros(self.sites, dtype=torch.int64), 0, self.ordering, torch.arange(self.sites, dtype=torch.int64)))
+        self.register_buffer(
+            "ordering_reversed",
+            torch.scatter(
+                torch.zeros(self.sites, dtype=torch.int64),
+                0,
+                self.ordering,
+                torch.arange(self.sites, dtype=torch.int64),
+            ),
+        )
 
         # Dummy Parameter for Device and Dtype Retrieval
         # This parameter is used to infer the device and dtype of the model.
@@ -704,8 +756,8 @@ class WaveFunctionNormal(torch.nn.Module):
         tail: torch.Tensor = self.tail(post_transformers)
 
         # amplitude/phase : batch_size * sites * physical_dim
-        amplitude: torch.Tensor = tail[:, :, :self.physical_dim]
-        phase: torch.Tensor = tail[:, :, self.physical_dim:]
+        amplitude: torch.Tensor = tail[:, :, : self.physical_dim]
+        phase: torch.Tensor = tail[:, :, self.physical_dim :]
 
         # Normalize the delta amplitude.
         amplitude = self._normalize_amplitude(amplitude)
@@ -719,7 +771,9 @@ class WaveFunctionNormal(torch.nn.Module):
         selected_amplitude: torch.Tensor = amplitude[batch_indices, sites_indices, x_int32]
         selected_phase: torch.Tensor = phase[batch_indices, sites_indices, x_int32]
 
-        return torch.view_as_complex(torch.stack([selected_amplitude.double().sum(dim=1), selected_phase.double().sum(dim=1)], dim=-1)).exp()
+        return torch.view_as_complex(
+            torch.stack([selected_amplitude.double().sum(dim=1), selected_phase.double().sum(dim=1)], dim=-1)
+        ).exp()
 
     @torch.jit.export
     def _blocked_forward_for_generate_unique(  # pylint: disable=too-many-arguments
@@ -751,14 +805,21 @@ class WaveFunctionNormal(torch.nn.Module):
             if cache_input is None:
                 post_transformers_block, cache_block = self.transformers(emb_block, None, None)
             else:
-                cache_block_input = [(cache_layer[0][batch_indices_block], cache_layer[1][batch_indices_block]) for cache_layer in cache_input]
+                cache_block_input = [
+                    (cache_layer[0][batch_indices_block], cache_layer[1][batch_indices_block])
+                    for cache_layer in cache_input
+                ]
                 post_transformers_block, cache_block = self.transformers(emb_block, cache_block_input, None)
             tail_block: torch.Tensor = self.tail(post_transformers_block)
             tail_list.append(tail_block)
             cache_list.append(cache_block)
         tail: torch.Tensor = torch.cat(tail_list)
         cache: list[tuple[torch.Tensor, torch.Tensor]] = [
-            (torch.cat([cache_block[depth][0] for cache_block in cache_list]), torch.cat([cache_block[depth][1] for cache_block in cache_list])) for depth in range(self.depth)
+            (
+                torch.cat([cache_block[depth][0] for cache_block in cache_list]),
+                torch.cat([cache_block[depth][1] for cache_block in cache_list]),
+            )
+            for depth in range(self.depth)
         ]
         return tail, cache
 
@@ -793,12 +854,14 @@ class WaveFunctionNormal(torch.nn.Module):
             # post_transformers, cache = self.transformers(emb, cache, None)
             # # tail: batch * (sites=1) * (2*physical_dim)
             # tail: torch.Tensor = self.tail(post_transformers)
-            tail, cache = self._blocked_forward_for_generate_unique(x=x, cache_input=cache, block_num=block_num, device=device, i=i)
+            tail, cache = self._blocked_forward_for_generate_unique(
+                x=x, cache_input=cache, block_num=block_num, device=device, i=i
+            )
 
             # The first physical_dim item are amplitude
             # delta_amplitude: batch * physical_dim
             # delta_amplitude represents the amplitude changes for the configurations at the new site.
-            delta_amplitude: torch.Tensor = tail[:, :, :self.physical_dim].view([local_batch_size, self.physical_dim])
+            delta_amplitude: torch.Tensor = tail[:, :, : self.physical_dim].view([local_batch_size, self.physical_dim])
 
             # normalized_delta_amplitude: batch_size * physical_dim
             # Normalize the delta amplitude.
@@ -813,20 +876,30 @@ class WaveFunctionNormal(torch.nn.Module):
             # Get max perturbed prob
             Z: torch.Tensor = L.max(dim=-1).values.view([local_batch_size, 1])
             # Evaluate the conditioned prob
-            tildeL: torch.Tensor = -torch.log(torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L))
+            tildeL: torch.Tensor = -torch.log(
+                torch.exp(-perturbed_probability.view([local_batch_size, 1])) - torch.exp(-Z) + torch.exp(-L)
+            )
 
             assert cache is not None
 
             # Calculate appended configurations for all new possible states
             # local_batch_size * current_site + local_batch_size * 1
-            xs: list[torch.Tensor] = [torch.cat([x, torch.tensor([j], device=device, dtype=torch.uint8).expand(local_batch_size, -1)], dim=1) for j in range(self.physical_dim)]
+            xs: list[torch.Tensor] = [
+                torch.cat([x, torch.tensor([j], device=device, dtype=torch.uint8).expand(local_batch_size, -1)], dim=1)
+                for j in range(self.physical_dim)
+            ]
 
             # Cat all configurations to get x : new_local_batch_size * (current_size+1)
             # (un)perturbed prob : new_local_batch_size
             x = torch.cat(xs)
             unperturbed_probability = l.permute(1, 0).reshape([self.physical_dim * local_batch_size])
             perturbed_probability = tildeL.permute(1, 0).reshape([self.physical_dim * local_batch_size])
-            cache_indices = torch.arange(local_batch_size, device=device, dtype=torch.int64).unsqueeze(0).expand(4, -1).reshape([4 * local_batch_size])
+            cache_indices = (
+                torch.arange(local_batch_size, device=device, dtype=torch.int64)
+                .unsqueeze(0)
+                .expand(4, -1)
+                .reshape([4 * local_batch_size])
+            )
             # kv cache: batch * heads_num * site * heads_dim, so just repeat first dimension
 
             # Filter results, only use largest batch_size ones

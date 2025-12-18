@@ -78,7 +78,11 @@ class CommonConfig:
         """
         Save data to checkpoint.
         """
-        data["random"] = {"host": torch.get_rng_state(), "device": dump_random_engine_state(self.device), "device_type": self.device.type}
+        data["random"] = {
+            "host": torch.get_rng_state(),
+            "device": dump_random_engine_state(self.device),
+            "device_type": self.device.type,
+        }
         data_path = self.folder() / "data.pth"
         local_data_path = self.folder() / f"data.{step}.pth"
         torch.save(data, local_data_path)
@@ -94,7 +98,9 @@ class CommonConfig:
             logging.info("Reached the maximum step, exiting.")
             sys.exit(0)
 
-    def main(self, *, model_param: typing.Any = None, network_param: typing.Any = None) -> tuple[ModelProto, NetworkProto, typing.Any]:
+    def main(
+        self, *, model_param: typing.Any = None, network_param: typing.Any = None
+    ) -> tuple[ModelProto, NetworkProto, typing.Any]:
         """
         The main function to create the model and network.
         """

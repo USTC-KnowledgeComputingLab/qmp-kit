@@ -67,7 +67,9 @@ class Model(ModelProto[ModelConfig]):
 
         self.n_qubits: int = int(openfermion_model.n_qubits)  # type: ignore[arg-type]
         self.n_electrons: int = int(openfermion_model.n_electrons)  # type: ignore[arg-type]
-        logging.info("Identified %d qubits and %d electrons for model '%s'", self.n_qubits, self.n_electrons, model_name)
+        logging.info(
+            "Identified %d qubits and %d electrons for model '%s'", self.n_qubits, self.n_electrons, model_name
+        )
 
         self.ref_energy: float = float(openfermion_model.fci_energy)  # type: ignore[arg-type]
         logging.info("Reference energy for model '%s' is %.10f", model_name, self.ref_energy)
@@ -82,7 +84,13 @@ class Model(ModelProto[ModelConfig]):
     def apply_within(self, configs_i: torch.Tensor, psi_i: torch.Tensor, configs_j: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.apply_within(configs_i, psi_i, configs_j)
 
-    def find_relative(self, configs_i: torch.Tensor, psi_i: torch.Tensor, count_selected: int, configs_exclude: torch.Tensor | None = None) -> torch.Tensor:
+    def find_relative(
+        self,
+        configs_i: torch.Tensor,
+        psi_i: torch.Tensor,
+        count_selected: int,
+        configs_exclude: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         return self.hamiltonian.find_relative(configs_i, psi_i, count_selected, configs_exclude)
 
     def diagonal_term(self, configs: torch.Tensor) -> torch.Tensor:
@@ -93,7 +101,11 @@ class Model(ModelProto[ModelConfig]):
 
     def show_config(self, config: torch.Tensor) -> str:
         string = "".join(f"{i:08b}"[::-1] for i in config.cpu().numpy())
-        return "[" + "".join(self._show_config_site(string[index:index + 2]) for index in range(0, self.n_qubits, 2)) + "]"
+        return (
+            "["
+            + "".join(self._show_config_site(string[index : index + 2]) for index in range(0, self.n_qubits, 2))
+            + "]"
+        )
 
     def _show_config_site(self, string: str) -> str:
         match string:

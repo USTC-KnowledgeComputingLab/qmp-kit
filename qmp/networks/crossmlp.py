@@ -67,18 +67,19 @@ class WaveFunction(torch.nn.Module):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            *,
-            sites: int,  # Number of qubits
-            physical_dim: int,  # Dimension of the physical space, which is always 2 for MLP
-            is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true for MLP
-            embedding_hidden_size: tuple[int, ...],  # Hidden layer sizes for embedding part
-            embedding_size: int,  # The dimension of the embedding
-            momentum_hidden_size: tuple[int, ...],  # Hidden layer sizes for momentum part
-            momentum_count: int,  # The number of max momentum order
-            tail_hidden_size: tuple[int, ...],  # Hidden layer size for tail part
-            kind: typing.Literal[0, 1, 2],  # Kind of the crossmlp forward function
-            ordering: int | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
+        self,
+        *,
+        sites: int,  # Number of qubits
+        physical_dim: int,  # Dimension of the physical space, which is always 2 for MLP
+        is_complex: bool,  # Indicates whether the wave function is complex-valued, which is always true for MLP
+        embedding_hidden_size: tuple[int, ...],  # Hidden layer sizes for embedding part
+        embedding_size: int,  # The dimension of the embedding
+        momentum_hidden_size: tuple[int, ...],  # Hidden layer sizes for momentum part
+        momentum_count: int,  # The number of max momentum order
+        tail_hidden_size: tuple[int, ...],  # Hidden layer size for tail part
+        kind: typing.Literal[0, 1, 2],  # Kind of the crossmlp forward function
+        ordering: int
+        | list[int],  # Ordering of sites: +1 for normal order, -1 for reversed order, or a custom order list
     ) -> None:
         super().__init__()
         self.sites: int = sites
@@ -93,7 +94,9 @@ class WaveFunction(torch.nn.Module):
         self.kind: typing.Literal[0, 1, 2] = kind
 
         self.emb = MLP(self.sites, self.embedding_size, self.embedding_hidden_size)
-        self.momentum = torch.nn.ModuleList([MLP(self.embedding_size, self.embedding_size, momentum_hidden_size) for _ in range(self.momentum_count)])
+        self.momentum = torch.nn.ModuleList(
+            [MLP(self.embedding_size, self.embedding_size, momentum_hidden_size) for _ in range(self.momentum_count)]
+        )
         self.tail = MLP(self.embedding_size, 1, tail_hidden_size)
 
         # Site Ordering Configuration
@@ -105,7 +108,15 @@ class WaveFunction(torch.nn.Module):
         self.ordering: torch.Tensor
         self.register_buffer("ordering", torch.tensor(ordering, dtype=torch.int64))
         self.ordering_reversed: torch.Tensor
-        self.register_buffer("ordering_reversed", torch.scatter(torch.zeros(self.sites, dtype=torch.int64), 0, self.ordering, torch.arange(self.sites, dtype=torch.int64)))
+        self.register_buffer(
+            "ordering_reversed",
+            torch.scatter(
+                torch.zeros(self.sites, dtype=torch.int64),
+                0,
+                self.ordering,
+                torch.arange(self.sites, dtype=torch.int64),
+            ),
+        )
 
         # Dummy Parameter for Device and Dtype Retrieval
         # This parameter is used to infer the device and dtype of the model.

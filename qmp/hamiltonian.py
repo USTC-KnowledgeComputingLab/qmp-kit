@@ -30,7 +30,7 @@ class Hamiltonian:
         arch_list = set()
         for i in range(torch.cuda.device_count()):
             capability = min(max_supported_sm, torch.cuda.get_device_capability(i))
-            arch = f'{capability[0]}.{capability[1]}'
+            arch = f"{capability[0]}.{capability[1]}"
             arch_list.add(arch)
         os.environ["TORCH_CUDA_ARCH_LIST"] = ";".join(sorted(arch_list))
 
@@ -59,8 +59,21 @@ class Hamiltonian:
                 name=name,
                 sources=sources,
                 is_python_module=is_prepare,
-                extra_cflags=["-O3", "-ffast-math", "-march=native", f"-DN_QUBYTES={n_qubytes}", f"-DPARTICLE_CUT={particle_cut}", "-std=c++20"],
-                extra_cuda_cflags=["-O3", "--use_fast_math", f"-DN_QUBYTES={n_qubytes}", f"-DPARTICLE_CUT={particle_cut}", "-std=c++20"],
+                extra_cflags=[
+                    "-O3",
+                    "-ffast-math",
+                    "-march=native",
+                    f"-DN_QUBYTES={n_qubytes}",
+                    f"-DPARTICLE_CUT={particle_cut}",
+                    "-std=c++20",
+                ],
+                extra_cuda_cflags=[
+                    "-O3",
+                    "--use_fast_math",
+                    f"-DN_QUBYTES={n_qubytes}",
+                    f"-DPARTICLE_CUT={particle_cut}",
+                    "-std=c++20",
+                ],
                 build_directory=build_directory,
             )
         if is_prepare:  # pylint: disable=no-else-return
@@ -69,10 +82,17 @@ class Hamiltonian:
             return getattr(torch.ops, name)
 
     @classmethod
-    def _prepare(cls, hamiltonian: dict[tuple[tuple[int, int], ...], complex]) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def _prepare(
+        cls, hamiltonian: dict[tuple[tuple[int, int], ...], complex]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         return getattr(cls._load_module(), "prepare")(hamiltonian)
 
-    def __init__(self, hamiltonian: dict[tuple[tuple[int, int], ...], complex] | tuple[torch.Tensor, torch.Tensor, torch.Tensor], *, kind: str) -> None:
+    def __init__(
+        self,
+        hamiltonian: dict[tuple[tuple[int, int], ...], complex] | tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+        *,
+        kind: str,
+    ) -> None:
         self.site: torch.Tensor
         self.kind: torch.Tensor
         self.coef: torch.Tensor
@@ -125,9 +145,15 @@ class Hamiltonian:
             A tensor of shape [batch_size_j] representing the output amplitudes on the given configurations.
         """
         self._prepare_data(configs_i.device)
-        _apply_within: typing.Callable[[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]
-        _apply_within = getattr(self._load_module(configs_i.device.type, configs_i.size(1), self.particle_cut), "apply_within")
-        psi_j = torch.view_as_complex(_apply_within(configs_i, torch.view_as_real(psi_i), configs_j, self.site, self.kind, self.coef))
+        _apply_within: typing.Callable[
+            [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor
+        ]
+        _apply_within = getattr(
+            self._load_module(configs_i.device.type, configs_i.size(1), self.particle_cut), "apply_within"
+        )
+        psi_j = torch.view_as_complex(
+            _apply_within(configs_i, torch.view_as_real(psi_i), configs_j, self.site, self.kind, self.coef)
+        )
         return psi_j
 
     def find_relative(
@@ -160,9 +186,15 @@ class Hamiltonian:
         if configs_exclude is None:
             configs_exclude = configs_i
         self._prepare_data(configs_i.device)
-        _find_relative: typing.Callable[[torch.Tensor, torch.Tensor, int, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]
-        _find_relative = getattr(self._load_module(configs_i.device.type, configs_i.size(1), self.particle_cut), "find_relative")
-        configs_j = _find_relative(configs_i, torch.view_as_real(psi_i), count_selected, self.site, self.kind, self.coef, configs_exclude)
+        _find_relative: typing.Callable[
+            [torch.Tensor, torch.Tensor, int, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor
+        ]
+        _find_relative = getattr(
+            self._load_module(configs_i.device.type, configs_i.size(1), self.particle_cut), "find_relative"
+        )
+        configs_j = _find_relative(
+            configs_i, torch.view_as_real(psi_i), count_selected, self.site, self.kind, self.coef, configs_exclude
+        )
         return configs_j
 
     def diagonal_term(self, configs: torch.Tensor) -> torch.Tensor:
@@ -181,7 +213,9 @@ class Hamiltonian:
         """
         self._prepare_data(configs.device)
         _diagonal_term: typing.Callable[[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]
-        _diagonal_term = getattr(self._load_module(configs.device.type, configs.size(1), self.particle_cut), "diagonal_term")
+        _diagonal_term = getattr(
+            self._load_module(configs.device.type, configs.size(1), self.particle_cut), "diagonal_term"
+        )
         psi_result = torch.view_as_complex(_diagonal_term(configs, self.site, self.kind, self.coef))
         return psi_result
 
@@ -201,6 +235,8 @@ class Hamiltonian:
         """
         self._prepare_data(configs.device)
         _single_relative: typing.Callable[[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]
-        _single_relative = getattr(self._load_module(configs.device.type, configs.size(1), self.particle_cut), "single_relative")
+        _single_relative = getattr(
+            self._load_module(configs.device.type, configs.size(1), self.particle_cut), "single_relative"
+        )
         configs_result = _single_relative(configs, self.site, self.kind, self.coef)
         return configs_result
