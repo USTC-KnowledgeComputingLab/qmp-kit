@@ -123,13 +123,9 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        # Use the filename as the group name
+        # Use the filename as the group name, removing extensions
         name = config.model_path.name
-        if name.endswith(".FCIDUMP.gz"):
-            return name[:-11]  # Remove ".FCIDUMP.gz"
-        elif name.endswith(".FCIDUMP"):
-            return name[:-8]  # Remove ".FCIDUMP"
-        return name
+        return name.removesuffix(".FCIDUMP.gz").removesuffix(".FCIDUMP")
 
     def __init__(self, args: ModelConfig) -> None:
         # pylint: disable=too-many-locals
@@ -187,11 +183,7 @@ class Model(ModelProto[ModelConfig]):
                 with open(fcidump_ref_energy_file, "rt", encoding="utf-8") as file:
                     fcidump_ref_energy_data = yaml.safe_load(file)
                 # Extract filename without extensions for YAML lookup
-                yaml_key = model_file_name.name
-                if yaml_key.endswith(".FCIDUMP.gz"):
-                    yaml_key = yaml_key[:-11]
-                elif yaml_key.endswith(".FCIDUMP"):
-                    yaml_key = yaml_key[:-8]
+                yaml_key = model_file_name.name.removesuffix(".FCIDUMP.gz").removesuffix(".FCIDUMP")
                 self.ref_energy = fcidump_ref_energy_data.get(yaml_key, 0)
             else:
                 self.ref_energy = 0

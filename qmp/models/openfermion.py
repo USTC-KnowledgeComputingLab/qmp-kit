@@ -39,11 +39,8 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        # Use the filename as the group name
-        name = config.model_path.name
-        if name.endswith(".hdf5"):
-            return name[:-5]  # Remove ".hdf5"
-        return name
+        # Use the filename as the group name, removing extension
+        return config.model_path.name.removesuffix(".hdf5")
 
     def __init__(self, args: ModelConfig) -> None:
         logging.info("Input arguments successfully parsed")
