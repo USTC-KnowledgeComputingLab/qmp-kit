@@ -23,6 +23,7 @@ from .algorithms import chop_imag as _  # type: ignore[no-redef]
 from .algorithms import pert as _  # type: ignore[no-redef]
 from .algorithms import pretrain as _  # type: ignore[no-redef]
 from .algorithms import natural_haar as _  # type: ignore[no-redef]
+from .algorithms import ranked_haar as _  # type: ignore[no-redef]
 
 
 @hydra.main(version_base=None, config_path=str(pathlib.Path().resolve()), config_name="config")
