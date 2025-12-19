@@ -2,7 +2,6 @@
 This file provides an interface to work with FCIDUMP files.
 """
 
-import os
 import typing
 import logging
 import dataclasses
@@ -20,8 +19,6 @@ from ..networks.crossmlp import WaveFunction as CrossMlpWaveFunction
 from ..hamiltonian import Hamiltonian
 from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
-QMP_MODEL_PATH = "QMP_MODEL_PATH"
-
 
 @dataclasses.dataclass
 class ModelConfig:
@@ -29,21 +26,13 @@ class ModelConfig:
     The configuration of the model.
     """
 
-    # The openfermion model name
-    model_name: str
-    # The path of models folder
-    model_path: pathlib.Path | None = None
+    # The complete path to the model file (can be relative or absolute)
+    model_path: pathlib.Path | str
     # The ref energy of the model, leave empty to read from FCIDUMP.yaml
     ref_energy: float | None = None
 
     def __post_init__(self) -> None:
-        if self.model_path is not None:
-            self.model_path = pathlib.Path(self.model_path)
-        else:
-            if QMP_MODEL_PATH in os.environ:
-                self.model_path = pathlib.Path(os.environ[QMP_MODEL_PATH])
-            else:
-                self.model_path = pathlib.Path("models")
+        self.model_path = pathlib.Path(self.model_path)
 
 
 def _read_fcidump(
@@ -134,20 +123,33 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        return config.model_name
+        # Extract the stem (filename without extension) from the model_path
+        path = pathlib.Path(config.model_path)
+        # Remove common FCIDUMP extensions to get a clean name
+        name = path.name
+        if name.endswith(".FCIDUMP.gz"):
+            name = name[:-11]  # Remove ".FCIDUMP.gz"
+        elif name.endswith(".FCIDUMP"):
+            name = name[:-8]  # Remove ".FCIDUMP"
+        return name
 
     def __init__(self, args: ModelConfig) -> None:
         # pylint: disable=too-many-locals
         logging.info("Input arguments successfully parsed")
-        logging.info("Model name: %s, Model path: %s", args.model_name, args.model_path)
+        logging.info("Model path: %s", args.model_path)
 
-        model_name = args.model_name
         model_path = args.model_path
         ref_energy = args.ref_energy
-        assert model_path is not None
 
-        model_file_name = model_path / f"{model_name}.FCIDUMP.gz"
-        model_file_name = model_file_name if model_file_name.exists() else model_path / model_name
+        # model_path is now the complete path to the file
+        model_file_name = pathlib.Path(model_path)
+
+        # Extract model name for logging and reference purposes
+        model_name = model_file_name.name
+        if model_name.endswith(".FCIDUMP.gz"):
+            model_name = model_name[:-11]
+        elif model_name.endswith(".FCIDUMP"):
+            model_name = model_name[:-8]
 
         checksum = hashlib.sha256(model_file_name.read_bytes()).hexdigest() + "v5"
         cache_file = platformdirs.user_cache_path("qmp", "kclab") / checksum

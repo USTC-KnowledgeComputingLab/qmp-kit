@@ -2,7 +2,6 @@
 This file provides an interface to work with openfermion models.
 """
 
-import os
 import typing
 import logging
 import dataclasses
@@ -15,8 +14,6 @@ from ..networks.crossmlp import WaveFunction as CrossMlpWaveFunction
 from ..hamiltonian import Hamiltonian
 from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
-QMP_MODEL_PATH = "QMP_MODEL_PATH"
-
 
 @dataclasses.dataclass
 class ModelConfig:
@@ -24,19 +21,11 @@ class ModelConfig:
     The configuration of the model.
     """
 
-    # The openfermion model name
-    model_name: str
-    # The path of models folder
-    model_path: pathlib.Path | None = None
+    # The complete path to the model file (can be relative or absolute)
+    model_path: pathlib.Path | str
 
     def __post_init__(self) -> None:
-        if self.model_path is not None:
-            self.model_path = pathlib.Path(self.model_path)
-        else:
-            if QMP_MODEL_PATH in os.environ:
-                self.model_path = pathlib.Path(os.environ[QMP_MODEL_PATH])
-            else:
-                self.model_path = pathlib.Path("models")
+        self.model_path = pathlib.Path(self.model_path)
 
 
 class Model(ModelProto[ModelConfig]):
@@ -50,17 +39,27 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        return config.model_name
+        # Extract the stem (filename without extension) from the model_path
+        path = pathlib.Path(config.model_path)
+        # Remove the .hdf5 extension to get a clean name
+        name = path.name
+        if name.endswith(".hdf5"):
+            name = name[:-5]  # Remove ".hdf5"
+        return name
 
     def __init__(self, args: ModelConfig) -> None:
         logging.info("Input arguments successfully parsed")
-        logging.info("Model name: %s, Model path: %s", args.model_name, args.model_path)
+        logging.info("Model path: %s", args.model_path)
 
-        model_name = args.model_name
         model_path = args.model_path
-        assert model_path is not None
 
-        model_file_name = model_path / f"{model_name}.hdf5"
+        # model_path is now the complete path to the file
+        model_file_name = pathlib.Path(model_path)
+
+        # Extract model name for logging purposes
+        model_name = model_file_name.name
+        if model_name.endswith(".hdf5"):
+            model_name = model_name[:-5]
         logging.info("Loading OpenFermion model '%s' from file: %s", model_name, model_file_name)
         openfermion_model: openfermion.MolecularData = openfermion.MolecularData(filename=str(model_file_name))  # type: ignore[no-untyped-call]
         logging.info("OpenFermion model '%s' successfully loaded", model_name)
