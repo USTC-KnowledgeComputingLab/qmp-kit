@@ -132,10 +132,6 @@ class Model(ModelProto[ModelConfig]):
 
     config_t = ModelConfig
 
-    @classmethod
-    def default_group_name(cls, config: ModelConfig) -> str:
-        return config.model_name
-
     def __init__(self, args: ModelConfig) -> None:
         # pylint: disable=too-many-locals
         logging.info("Input arguments successfully parsed")

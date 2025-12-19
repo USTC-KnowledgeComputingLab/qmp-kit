@@ -107,22 +107,6 @@ class ModelProto(typing.Protocol[ModelConfig]):
 
     config_t: type[ModelConfig]
 
-    @classmethod
-    def default_group_name(cls, config: ModelConfig) -> str:
-        """
-        Get the default group name for logging purposes.
-
-        Parameters
-        ----------
-        config : ModelConfig
-            The config of model.
-
-        Returns
-        -------
-        str
-            The group name for logging purposes.
-        """
-
     def __init__(self, config: ModelConfig) -> None:
         """
         Create a model from the given config.
