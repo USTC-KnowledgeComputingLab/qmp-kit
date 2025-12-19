@@ -15,16 +15,6 @@ from ..hamiltonian import Hamiltonian
 from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
-def _extract_model_name_from_path(path: pathlib.Path) -> str:
-    """
-    Extract the model name from a file path by removing the .hdf5 extension.
-    """
-    name = path.name
-    if name.endswith(".hdf5"):
-        return name[:-5]  # Remove ".hdf5"
-    return name
-
-
 @dataclasses.dataclass
 class ModelConfig:
     """
@@ -49,7 +39,11 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        return _extract_model_name_from_path(config.model_path)
+        # Use the filename as the group name
+        name = config.model_path.name
+        if name.endswith(".hdf5"):
+            return name[:-5]  # Remove ".hdf5"
+        return name
 
     def __init__(self, args: ModelConfig) -> None:
         logging.info("Input arguments successfully parsed")
@@ -58,27 +52,23 @@ class Model(ModelProto[ModelConfig]):
         # model_path is now the complete path to the file (already converted to Path in __post_init__)
         model_file_name = args.model_path
 
-        # Extract model name for logging purposes
-        model_name = _extract_model_name_from_path(model_file_name)
-        logging.info("Loading OpenFermion model '%s' from file: %s", model_name, model_file_name)
+        logging.info("Loading OpenFermion model from file: %s", model_file_name)
         openfermion_model: openfermion.MolecularData = openfermion.MolecularData(filename=str(model_file_name))  # type: ignore[no-untyped-call]
-        logging.info("OpenFermion model '%s' successfully loaded", model_name)
+        logging.info("OpenFermion model successfully loaded")
 
         self.n_qubits: int = int(openfermion_model.n_qubits)  # type: ignore[arg-type]
         self.n_electrons: int = int(openfermion_model.n_electrons)  # type: ignore[arg-type]
-        logging.info(
-            "Identified %d qubits and %d electrons for model '%s'", self.n_qubits, self.n_electrons, model_name
-        )
+        logging.info("Identified %d qubits and %d electrons", self.n_qubits, self.n_electrons)
 
         self.ref_energy: float = float(openfermion_model.fci_energy)  # type: ignore[arg-type]
-        logging.info("Reference energy for model '%s' is %.10f", model_name, self.ref_energy)
+        logging.info("Reference energy is %.10f", self.ref_energy)
 
         logging.info("Converting OpenFermion Hamiltonian to internal Hamiltonian representation")
         self.hamiltonian: Hamiltonian = Hamiltonian(
             openfermion.transforms.get_fermion_operator(openfermion_model.get_molecular_hamiltonian()).terms,  # type: ignore[no-untyped-call]
             kind="fermi",
         )
-        logging.info("Internal Hamiltonian representation for model '%s' has been successfully created", model_name)
+        logging.info("Internal Hamiltonian representation has been successfully created")
 
     def apply_within(self, configs_i: torch.Tensor, psi_i: torch.Tensor, configs_j: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.apply_within(configs_i, psi_i, configs_j)

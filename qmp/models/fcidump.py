@@ -20,18 +20,6 @@ from ..hamiltonian import Hamiltonian
 from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
-def _extract_model_name_from_path(path: pathlib.Path) -> str:
-    """
-    Extract the model name from a file path by removing FCIDUMP extensions.
-    """
-    name = path.name
-    if name.endswith(".FCIDUMP.gz"):
-        return name[:-11]  # Remove ".FCIDUMP.gz"
-    elif name.endswith(".FCIDUMP"):
-        return name[:-8]  # Remove ".FCIDUMP"
-    return name
-
-
 @dataclasses.dataclass
 class ModelConfig:
     """
@@ -135,7 +123,13 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        return _extract_model_name_from_path(config.model_path)
+        # Use the filename as the group name
+        name = config.model_path.name
+        if name.endswith(".FCIDUMP.gz"):
+            return name[:-11]  # Remove ".FCIDUMP.gz"
+        elif name.endswith(".FCIDUMP"):
+            return name[:-8]  # Remove ".FCIDUMP"
+        return name
 
     def __init__(self, args: ModelConfig) -> None:
         # pylint: disable=too-many-locals
@@ -146,46 +140,42 @@ class Model(ModelProto[ModelConfig]):
         model_file_name = args.model_path
         ref_energy = args.ref_energy
 
-        # Extract model name for logging and reference purposes
-        model_name = _extract_model_name_from_path(model_file_name)
-
         checksum = hashlib.sha256(model_file_name.read_bytes()).hexdigest() + "v5"
         cache_file = platformdirs.user_cache_path("qmp", "kclab") / checksum
         if cache_file.exists():
-            logging.info("Loading FCIDUMP metadata '%s' from file: %s", model_name, model_file_name)
+            logging.info("Loading FCIDUMP metadata from file: %s", model_file_name)
             (n_orbit, n_electron, n_spin), _ = _read_fcidump(model_file_name, cached=True)
-            logging.info("FCIDUMP metadata '%s' successfully loaded", model_name)
+            logging.info("FCIDUMP metadata successfully loaded")
 
-            logging.info("Loading FCIDUMP Hamiltonian '%s' from cache", model_name)
+            logging.info("Loading FCIDUMP Hamiltonian from cache")
             openfermion_hamiltonian_data = torch.load(cache_file, map_location="cpu", weights_only=True)
-            logging.info("FCIDUMP Hamiltonian '%s' successfully loaded", model_name)
+            logging.info("FCIDUMP Hamiltonian successfully loaded")
 
-            logging.info("Recovering internal Hamiltonian representation for model '%s'", model_name)
+            logging.info("Recovering internal Hamiltonian representation")
             self.hamiltonian = Hamiltonian(openfermion_hamiltonian_data, kind="fermi")
-            logging.info("Internal Hamiltonian representation for model '%s' successfully recovered", model_name)
+            logging.info("Internal Hamiltonian representation successfully recovered")
         else:
-            logging.info("Loading FCIDUMP Hamiltonian '%s' from file: %s", model_name, model_file_name)
+            logging.info("Loading FCIDUMP Hamiltonian from file: %s", model_file_name)
             (n_orbit, n_electron, n_spin), openfermion_hamiltonian_dict = _read_fcidump(model_file_name)
-            logging.info("FCIDUMP Hamiltonian '%s' successfully loaded", model_name)
+            logging.info("FCIDUMP Hamiltonian successfully loaded")
 
             logging.info("Converting OpenFermion Hamiltonian to internal Hamiltonian representation")
             self.hamiltonian = Hamiltonian(openfermion_hamiltonian_dict, kind="fermi")
-            logging.info("Internal Hamiltonian representation for model '%s' has been successfully created", model_name)
+            logging.info("Internal Hamiltonian representation has been successfully created")
 
-            logging.info("Caching OpenFermion Hamiltonian for model '%s'", model_name)
+            logging.info("Caching OpenFermion Hamiltonian")
             cache_file.parent.mkdir(parents=True, exist_ok=True)
             torch.save((self.hamiltonian.site, self.hamiltonian.kind, self.hamiltonian.coef), cache_file)
-            logging.info("OpenFermion Hamiltonian for model '%s' successfully cached", model_name)
+            logging.info("OpenFermion Hamiltonian successfully cached")
 
         self.n_qubit: int = n_orbit * 2
         self.n_electron: int = n_electron
         self.n_spin: int = n_spin
         logging.info(
-            "Identified %d qubits, %d electrons and %d spin for model '%s'",
+            "Identified %d qubits, %d electrons and %d spin",
             self.n_qubit,
             self.n_electron,
             self.n_spin,
-            model_name,
         )
 
         self.ref_energy: float
@@ -196,10 +186,16 @@ class Model(ModelProto[ModelConfig]):
             if fcidump_ref_energy_file.exists():
                 with open(fcidump_ref_energy_file, "rt", encoding="utf-8") as file:
                     fcidump_ref_energy_data = yaml.safe_load(file)
-                self.ref_energy = fcidump_ref_energy_data.get(model_name, 0)
+                # Extract filename without extensions for YAML lookup
+                yaml_key = model_file_name.name
+                if yaml_key.endswith(".FCIDUMP.gz"):
+                    yaml_key = yaml_key[:-11]
+                elif yaml_key.endswith(".FCIDUMP"):
+                    yaml_key = yaml_key[:-8]
+                self.ref_energy = fcidump_ref_energy_data.get(yaml_key, 0)
             else:
                 self.ref_energy = 0
-        logging.info("Reference energy for model '%s' is %.10f", model_name, self.ref_energy)
+        logging.info("Reference energy is %.10f", self.ref_energy)
 
     def apply_within(self, configs_i: torch.Tensor, psi_i: torch.Tensor, configs_j: torch.Tensor) -> torch.Tensor:
         return self.hamiltonian.apply_within(configs_i, psi_i, configs_j)
