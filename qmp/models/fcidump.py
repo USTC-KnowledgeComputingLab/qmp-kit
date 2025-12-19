@@ -142,11 +142,9 @@ class Model(ModelProto[ModelConfig]):
         logging.info("Input arguments successfully parsed")
         logging.info("Model path: %s", args.model_path)
 
-        model_path = args.model_path
+        # model_path is now the complete path to the file (already converted to Path in __post_init__)
+        model_file_name = args.model_path
         ref_energy = args.ref_energy
-
-        # model_path is now the complete path to the file
-        model_file_name = pathlib.Path(model_path)
 
         # Extract model name for logging and reference purposes
         model_name = _extract_model_name_from_path(model_file_name)
