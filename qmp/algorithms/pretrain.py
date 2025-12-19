@@ -11,7 +11,7 @@ from ..utility.common import CommonConfig
 from ..utility.optimizer import initialize_optimizer
 from ..utility.subcommand_dict import subcommand_dict
 
-@dataclassses.dataclass
+@dataclasses.dataclass
 class PretrainConfig:
     """
     Configuration for pretraining quantum many-body models.
@@ -19,12 +19,12 @@ class PretrainConfig:
 
     common: CommonConfig
 
+    # Dataset path for pretraining
+    dataset_path: str
     # The learning rate for the local optimizer
     learning_rate: float = 1e-3
     # The name of the loss function to use
     loss_name: str = "sum_filtered_angle_scaled_log"
-    # Dataset path for pretraining
-    dataset_path: str
 
     def main(self, *, model_param: typing.Any = None, network_param: typing.Any = None) -> None:
         """
@@ -33,9 +33,9 @@ class PretrainConfig:
 
         model, network, data = self.common.main(model_param=model_param, network_param=network_param)
 
-        dataset = torch.load(self.dataset_path, map_location="cpu", weight_only=True)
-        config = dataset["config"].to(device=self.common.device)
-        psi = dataset["psi"].to(device=self.common.device)
+        dataset = torch.load(self.dataset_path, map_location="cpu", weights_only=True)
+        config = dataset[0].to(device=self.common.device)
+        psi = dataset[1].to(device=self.common.device)
 
         optimizer = initialize_optimizer(
             network.parameters(),
