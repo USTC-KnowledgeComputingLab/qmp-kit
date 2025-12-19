@@ -198,7 +198,7 @@ class Model(ModelProto[ModelConfig]):
             if fcidump_ref_energy_file.exists():
                 with open(fcidump_ref_energy_file, "rt", encoding="utf-8") as file:
                     fcidump_ref_energy_data = yaml.safe_load(file)
-                self.ref_energy = fcidump_ref_energy_data.get(pathlib.Path(model_name).name, 0)
+                self.ref_energy = fcidump_ref_energy_data.get(model_name, 0)
             else:
                 self.ref_energy = 0
         logging.info("Reference energy for model '%s' is %.10f", model_name, self.ref_energy)
