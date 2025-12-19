@@ -536,6 +536,7 @@ class HaarConfig:
             writer.add_scalar("haar/error/state", final_energy - model.ref_energy, data["haar"]["global"])  # type: ignore[no-untyped-call]
             writer.add_scalar("haar/error/target", target_energy - model.ref_energy, data["haar"]["global"])  # type: ignore[no-untyped-call]
             logging.info("Displaying the largest amplitudes")
+            target_psi = original_psi / original_psi.abs().max()
             indices = target_psi.abs().argsort(descending=True)
             text = []
             for index in indices[: self.logging_psi]:
