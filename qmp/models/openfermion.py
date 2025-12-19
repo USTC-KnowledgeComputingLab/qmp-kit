@@ -15,6 +15,16 @@ from ..hamiltonian import Hamiltonian
 from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
+def _extract_model_name_from_path(path: pathlib.Path) -> str:
+    """
+    Extract the model name from a file path by removing the .hdf5 extension.
+    """
+    name = path.name
+    if name.endswith(".hdf5"):
+        return name[:-5]  # Remove ".hdf5"
+    return name
+
+
 @dataclasses.dataclass
 class ModelConfig:
     """
@@ -39,13 +49,7 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        # Extract the stem (filename without extension) from the model_path
-        path = pathlib.Path(config.model_path)
-        # Remove the .hdf5 extension to get a clean name
-        name = path.name
-        if name.endswith(".hdf5"):
-            name = name[:-5]  # Remove ".hdf5"
-        return name
+        return _extract_model_name_from_path(pathlib.Path(config.model_path))
 
     def __init__(self, args: ModelConfig) -> None:
         logging.info("Input arguments successfully parsed")
@@ -57,9 +61,7 @@ class Model(ModelProto[ModelConfig]):
         model_file_name = pathlib.Path(model_path)
 
         # Extract model name for logging purposes
-        model_name = model_file_name.name
-        if model_name.endswith(".hdf5"):
-            model_name = model_name[:-5]
+        model_name = _extract_model_name_from_path(model_file_name)
         logging.info("Loading OpenFermion model '%s' from file: %s", model_name, model_file_name)
         openfermion_model: openfermion.MolecularData = openfermion.MolecularData(filename=str(model_file_name))  # type: ignore[no-untyped-call]
         logging.info("OpenFermion model '%s' successfully loaded", model_name)

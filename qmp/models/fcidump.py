@@ -20,6 +20,18 @@ from ..hamiltonian import Hamiltonian
 from ..utility.model_dict import model_dict, ModelProto, NetworkProto, NetworkConfigProto
 
 
+def _extract_model_name_from_path(path: pathlib.Path) -> str:
+    """
+    Extract the model name from a file path by removing FCIDUMP extensions.
+    """
+    name = path.name
+    if name.endswith(".FCIDUMP.gz"):
+        return name[:-11]  # Remove ".FCIDUMP.gz"
+    elif name.endswith(".FCIDUMP"):
+        return name[:-8]  # Remove ".FCIDUMP"
+    return name
+
+
 @dataclasses.dataclass
 class ModelConfig:
     """
@@ -123,15 +135,7 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        # Extract the stem (filename without extension) from the model_path
-        path = pathlib.Path(config.model_path)
-        # Remove common FCIDUMP extensions to get a clean name
-        name = path.name
-        if name.endswith(".FCIDUMP.gz"):
-            name = name[:-11]  # Remove ".FCIDUMP.gz"
-        elif name.endswith(".FCIDUMP"):
-            name = name[:-8]  # Remove ".FCIDUMP"
-        return name
+        return _extract_model_name_from_path(pathlib.Path(config.model_path))
 
     def __init__(self, args: ModelConfig) -> None:
         # pylint: disable=too-many-locals
@@ -145,11 +149,7 @@ class Model(ModelProto[ModelConfig]):
         model_file_name = pathlib.Path(model_path)
 
         # Extract model name for logging and reference purposes
-        model_name = model_file_name.name
-        if model_name.endswith(".FCIDUMP.gz"):
-            model_name = model_name[:-11]
-        elif model_name.endswith(".FCIDUMP"):
-            model_name = model_name[:-8]
+        model_name = _extract_model_name_from_path(model_file_name)
 
         checksum = hashlib.sha256(model_file_name.read_bytes()).hexdigest() + "v5"
         cache_file = platformdirs.user_cache_path("qmp", "kclab") / checksum
