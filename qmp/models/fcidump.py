@@ -135,7 +135,7 @@ class Model(ModelProto[ModelConfig]):
 
     @classmethod
     def default_group_name(cls, config: ModelConfig) -> str:
-        return _extract_model_name_from_path(pathlib.Path(config.model_path))
+        return _extract_model_name_from_path(config.model_path)
 
     def __init__(self, args: ModelConfig) -> None:
         # pylint: disable=too-many-locals
