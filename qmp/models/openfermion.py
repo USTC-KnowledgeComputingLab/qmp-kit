@@ -40,10 +40,6 @@ class Model(ModelProto[ModelConfig]):
 
     config_t = ModelConfig
 
-    @classmethod
-    def default_group_name(cls, config: ModelConfig) -> str:
-        return config.model_name
-
     def __init__(self, args: ModelConfig) -> None:
         logging.info("Input arguments successfully parsed")
         logging.info("Model path: %s", args.model_path)

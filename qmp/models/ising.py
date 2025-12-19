@@ -71,27 +71,6 @@ class Model(ModelProto[ModelConfig]):
     config_t = ModelConfig
 
     @classmethod
-    def default_group_name(cls, config: ModelConfig) -> str:
-        # pylint: disable=too-many-locals
-        x = f"_x{config.x}" if config.x != 0 else ""
-        y = f"_y{config.y}" if config.y != 0 else ""
-        z = f"_z{config.z}" if config.z != 0 else ""
-        xh = f"_xh{config.xh}" if config.xh != 0 else ""
-        yh = f"_yh{config.yh}" if config.yh != 0 else ""
-        zh = f"_zh{config.zh}" if config.zh != 0 else ""
-        xv = f"_xv{config.xv}" if config.xv != 0 else ""
-        yv = f"_yv{config.yv}" if config.yv != 0 else ""
-        zv = f"_zv{config.zv}" if config.zv != 0 else ""
-        xd = f"_xd{config.xd}" if config.xd != 0 else ""
-        yd = f"_yd{config.yd}" if config.yd != 0 else ""
-        zd = f"_zd{config.zd}" if config.zd != 0 else ""
-        xa = f"_xa{config.xa}" if config.xa != 0 else ""
-        ya = f"_ya{config.ya}" if config.ya != 0 else ""
-        za = f"_za{config.za}" if config.za != 0 else ""
-        desc = x + y + z + xh + yh + zh + xv + yv + zv + xd + yd + zd + xa + ya + za
-        return f"Ising_{config.m}_{config.n}" + desc
-
-    @classmethod
     def _prepare_hamiltonian(cls, args: ModelConfig) -> dict[tuple[tuple[int, int], ...], complex]:
         # pylint: disable=too-many-branches
         # pylint: disable=too-many-nested-blocks
